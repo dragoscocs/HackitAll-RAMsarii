@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatedForm, EcoOrbitDisplay, BoxReveal } from '../components/ui/SignIn'
 import { useAuth } from '../context/AuthContext'
-import LegalFooter from '../components/LegalFooter'
 
 const API_BASE = ''
 
@@ -187,7 +186,6 @@ export default function AuthPage() {
           </div>
         </div>
       </div>
-      <LegalFooter />
     </div>
   )
 }

@@ -32,6 +32,12 @@ export function AuthProvider({ children }) {
     if (userData?.requiresWorkLocationSetup) setShowWorkModal(true)
   }
 
+  const updateUser = (fields) => {
+    if (!user) return
+    const updated = { ...user, ...fields }
+    _persist(updated)
+  }
+
   const logout = () => {
     setUser(null)
     setShowWorkModal(false)
@@ -80,7 +86,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, setWorkLocation, recordBreakInContext, recordMatchInContext }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, setWorkLocation, recordBreakInContext, recordMatchInContext }}>
       {children}
       {showWorkModal && user && <WorkLocationModal onSelect={setWorkLocation} userName={user.name?.split(' ')[0] ?? 'Coleg'} />}
     </AuthContext.Provider>

@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CalendarProvider } from './context/CalendarContext'
+import LegalFooter from './components/LegalFooter'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './components/Dashboard'
 import PausePage from './pages/PausePage'
 import ProgramPage from './pages/ProgramPage'
 import MyProfilePage from './pages/MyProfilePage'
 import MatchesPage from './pages/MatchesPage'
+import LegalDocumentPage from './pages/LegalDocumentPage'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -27,6 +29,7 @@ function AppRoutes() {
       <Route path="/program"    element={<ProtectedRoute><ProgramPage /></ProtectedRoute>} />
       <Route path="/my-profile" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
       <Route path="/matches"    element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
+      <Route path="/legal/:docId" element={<LegalDocumentPage />} />
       <Route path="/"           element={<Navigate to="/dashboard" replace />} />
       <Route path="*"           element={<Navigate to="/dashboard" replace />} />
     </Routes>
@@ -38,7 +41,12 @@ export default function App() {
     <AuthProvider>
       <CalendarProvider>
         <BrowserRouter>
-          <AppRoutes />
+          <div className="flex flex-col min-h-screen bg-surface">
+            <div className="flex-1 flex flex-col">
+              <AppRoutes />
+            </div>
+            <LegalFooter />
+          </div>
         </BrowserRouter>
       </CalendarProvider>
     </AuthProvider>

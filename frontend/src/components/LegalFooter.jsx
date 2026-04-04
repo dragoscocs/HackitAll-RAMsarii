@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 // ── Legal content ─────────────────────────────────────────────────────────────
 const LEGAL_CONTENT = {
@@ -136,81 +135,44 @@ SOCIAL MEDIA:
 
 Pentru solicitări GDPR și exercitarea drepturilor tale, te rugăm să contactezi DPO-ul nostru la privacy@syncfit.ro cu subiectul "Solicitare GDPR – [tipul solicitării]".`,
   },
+  'Conformitate GDPR': {
+    icon: '🛡️',
+    body: `Conformitate GDPR la SyncFit:
+1. Colectare Minimă: Datele sunt colectate strict pentru scopurile platformei de wellbeing (ore de pauză, preferințe sportive).
+2. Temei Legal: Interes legitim și consimțământ explicit la înregistrare.
+3. Transparență: Nu partajăm datele de identificare cu angajatorul, rezultatele fiind agregate 100%.
+4. Drepturi Garantate: Ștergere, portabilitate, și rectificare accesibile din profil.`,
+  },
+  'Date Criptate': {
+    icon: '🔒',
+    body: `Securitatea Datelor pe SyncFit:
+1. Criptare în Tranzit: Utilizăm protocolul TLS 1.3 pentru toate comunicațiile cu serverele noastre (HTTPS).
+2. Criptare în Repaus: Datele din baza de date sunt stocate folosind standardul de criptare AES-256.
+3. Hashare Parole: Mecanisme bcrypt puternice pentru parole. 
+4. Cloud Securizat: Infrastructura este găzduită pe servicii cloud enterprise care respectă normele de top ISO 27001.`,
+  },
+  'Detalii ANSPDCP': {
+    icon: '🏛️',
+    body: `Înregistrarea ca Operator de Date:
+EcoSync SRL este declarat ca operator de date cu caracter personal în relația cu ANSPDCP. 
+
+Platforma SyncFit operează în deplină conformitate cu Legea 190/2018 (privind măsuri de punere în aplicare a GDPR pe teritoriul României). Pentru orice referințe oficiale, ne poți contacta la privacy@syncfit.ro.`,
+  },
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
-function LegalModal({ title, onClose }) {
-  const content = LEGAL_CONTENT[title]
-  if (!content) return null
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
-      {/* Dialog */}
-      <div
-        className="relative z-10 w-full max-w-lg bg-zinc-900 border border-surface-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh]"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{content.icon}</span>
-            <h2 className="text-base font-bold text-white">{title}</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg border border-surface-border bg-surface hover:bg-surface-border flex items-center justify-center text-slate-400 hover:text-white transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="overflow-y-auto px-6 py-5 flex-1">
-          {content.body.split('\n').map((line, i) => {
-            if (line.trim() === '') return <div key={i} className="h-2" />
-            if (line.match(/^[A-ZĂÎÂȘȚ][A-ZĂÎÂȘȚ\s()]+:$/) || line.match(/^\d+\. [A-ZĂÎÂȘȚ]/)) {
-              return <p key={i} className="text-xs font-bold text-indigo-300 mt-3 mb-1">{line}</p>
-            }
-            if (line.startsWith('•')) {
-              return <p key={i} className="text-xs text-slate-300 leading-relaxed pl-3">{line}</p>
-            }
-            return <p key={i} className="text-xs text-slate-300 leading-relaxed">{line}</p>
-          })}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-surface-border shrink-0">
-          <button
-            onClick={onClose}
-            className="w-full h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 text-sm font-medium hover:bg-indigo-600/40 transition-all"
-          >
-            Închide
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+// Modals removed in favor of LegalDocumentPage
 
 // ── Footer component (default export) ─────────────────────────────────────────
 export default function LegalFooter() {
-  const [openModal, setOpenModal] = useState(null)
+  const navigate = useNavigate()
 
-  const links = Object.keys(LEGAL_CONTENT)
+  const links = ['Politica de Confidențialitate', 'Termeni și Condiții', 'Politica de Cookies', 'Contact']
 
   return (
     <>
-      {openModal && <LegalModal title={openModal} onClose={() => setOpenModal(null)} />}
-
       <footer className="border-t border-surface-border bg-zinc-950/80 mt-auto">
         {/* Main footer row */}
-        <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="max-w-7xl mx-auto px-6 py-5 grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* Left — brand */}
           <div className="flex flex-col gap-3">
@@ -232,13 +194,13 @@ export default function LegalFooter() {
           </div>
 
           {/* Center — quick links */}
-          <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Legal & Politici</p>
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Legal & Politici</p>
+            <div className="flex flex-col gap-1.5">
               {links.map(link => (
                 <button
                   key={link}
-                  onClick={() => setOpenModal(link)}
+                  onClick={() => alert('Politicile statice vor fi disponibile curând.')}
                   className="text-left text-xs text-slate-500 hover:text-slate-300 transition-colors"
                 >
                   {link}
@@ -248,37 +210,37 @@ export default function LegalFooter() {
           </div>
 
           {/* Right — trust signals */}
-          <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Conformitate</p>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 bg-emerald-500/8 border border-emerald-500/20 rounded-xl px-3 py-2.5">
-                <span className="text-emerald-400 text-base">🛡️</span>
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Conformitate</p>
+            <div className="flex flex-col gap-1.5">
+              <button onClick={() => navigate('/legal/gdpr')} className="flex items-center text-left gap-2.5 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-lg px-2.5 py-1.5 transition-colors">
+                <span className="text-emerald-400 text-sm">🛡️</span>
                 <div>
-                  <p className="text-xs font-semibold text-emerald-300">GDPR Compliant</p>
-                  <p className="text-[10px] text-slate-500">Regulamentul UE 2016/679</p>
+                  <p className="text-[11px] font-semibold text-emerald-300 leading-none mb-0.5">GDPR Compliant</p>
+                  <p className="text-[9px] text-slate-500 leading-none">Regulamentul UE 2016/679</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 bg-sky-500/8 border border-sky-500/20 rounded-xl px-3 py-2.5">
-                <span className="text-sky-400 text-base">🔒</span>
+              </button>
+              <button onClick={() => navigate('/legal/criptare')} className="flex items-center text-left gap-2.5 bg-sky-500/5 hover:bg-sky-500/10 border border-sky-500/10 rounded-lg px-2.5 py-1.5 transition-colors">
+                <span className="text-sky-400 text-sm">🔒</span>
                 <div>
-                  <p className="text-xs font-semibold text-sky-300">Date Criptate</p>
-                  <p className="text-[10px] text-slate-500">TLS 1.3 · AES-256</p>
+                  <p className="text-[11px] font-semibold text-sky-300 leading-none mb-0.5">Date Criptate</p>
+                  <p className="text-[9px] text-slate-500 leading-none">TLS 1.3 · AES-256</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 bg-violet-500/8 border border-violet-500/20 rounded-xl px-3 py-2.5">
-                <span className="text-violet-400 text-base">🏛️</span>
+              </button>
+              <button onClick={() => navigate('/legal/anspdcp')} className="flex items-center text-left gap-2.5 bg-violet-500/5 hover:bg-violet-500/10 border border-violet-500/10 rounded-lg px-2.5 py-1.5 transition-colors">
+                <span className="text-violet-400 text-sm">🏛️</span>
                 <div>
-                  <p className="text-xs font-semibold text-violet-300">ANSPDCP</p>
-                  <p className="text-[10px] text-slate-500">Înregistrat ca operator</p>
+                  <p className="text-[11px] font-semibold text-violet-300 leading-none mb-0.5">ANSPDCP</p>
+                  <p className="text-[9px] text-slate-500 leading-none">Înregistrat ca operator</p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Bottom strip */}
-        <div className="border-t border-surface-border/50 px-6 py-3">
-          <p className="max-w-7xl mx-auto text-center text-[10px] text-slate-600 leading-relaxed">
+        <div className="border-t border-surface-border/50 px-6 py-2">
+          <p className="max-w-7xl mx-auto text-center text-[9px] text-slate-600 leading-relaxed">
             SyncFit prelucrează datele personale în conformitate cu GDPR (Regulamentul UE 2016/679) exclusiv în scopul furnizării serviciilor de wellbeing corporativ.
             Datele nu sunt transmise terților fără consimțământ explicit. DPO: privacy@syncfit.ro · ANSPDCP: www.dataprotection.ro
           </p>

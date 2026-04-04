@@ -51,6 +51,11 @@ public class User {
     @Column(columnDefinition = "integer default 17")
     private Integer workEndHour = 17;    // e.g. 17 = 17:00
 
+    // Legal consents
+    private boolean gdprConsent = false;
+    private boolean criptareConsent = false;
+    private boolean anspdcpConsent = false;
+
     public User() {}
 
     public User(String name, String email, String password, String city, List<String> preferredSports) {
@@ -114,4 +119,13 @@ public class User {
 
     public int getWorkEndHour() { return workEndHour != null ? workEndHour : 17; }
     public void setWorkEndHour(int workEndHour) { this.workEndHour = workEndHour; }
+
+    public boolean isGdprConsent() { return gdprConsent; }
+    public void setGdprConsent(boolean gdprConsent) { this.gdprConsent = gdprConsent; }
+
+    public boolean isCriptareConsent() { return criptareConsent; }
+    public void setCriptareConsent(boolean criptareConsent) { this.criptareConsent = criptareConsent; }
+
+    public boolean isAnspdcpConsent() { return anspdcpConsent; }
+    public void setAnspdcpConsent(boolean anspdcpConsent) { this.anspdcpConsent = anspdcpConsent; }
 }

@@ -114,4 +114,16 @@ public class AuthService {
         if (userId == null) return null;
         return userRepository.findById(userId).orElse(null);
     }
+
+    public void setConsent(Long userId, String type, boolean value) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Utilizator negăsit."));
+        switch(type) {
+            case "gdpr": user.setGdprConsent(value); break;
+            case "criptare": user.setCriptareConsent(value); break;
+            case "anspdcp": user.setAnspdcpConsent(value); break;
+            default: throw new RuntimeException("Tip consimțământ invalid.");
+        }
+        userRepository.save(user);
+    }
 }

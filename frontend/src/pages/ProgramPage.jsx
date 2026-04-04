@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, Wifi, WifiOff, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCalendar, MEETING_TYPES_MAP } from '../context/CalendarContext'
-import LegalFooter from '../components/LegalFooter'
 
 const DAY_START_H = 8
 const DAY_END_H   = 19
@@ -778,8 +777,6 @@ export default function ProgramPage() {
 
         </div>
       </main>
-
-      <LegalFooter />
     </div>
   )
 }

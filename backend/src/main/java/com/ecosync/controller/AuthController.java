@@ -46,4 +46,16 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/{userId}/consent")
+    public ResponseEntity<?> setConsent(@PathVariable Long userId, @RequestBody Map<String, Object> body) {
+        try {
+            String type = (String) body.get("type");
+            Boolean accepted = (Boolean) body.get("accepted");
+            authService.setConsent(userId, type, accepted != null && accepted);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
