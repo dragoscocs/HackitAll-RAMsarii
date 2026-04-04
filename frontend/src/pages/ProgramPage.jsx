@@ -70,17 +70,27 @@ function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
   const currentM   = now.getMinutes()
   const currentPx  = timeToPx(currentH, currentM)
   const isWorking  = currentH >= DAY_START_H && currentH < DAY_END_H
+  const [highlightPulse, setHighlightPulse] = useState(false)
 
   const breakHours    = breakSchedule?.scheduledBreakHours ?? []
   const nextBreakH    = breakSchedule?.nextBreakHour
   const currentHDecimal = currentH + currentM / 60
 
-  // Scroll to current time on mount
+  // Scroll to current time on mount and handle highlight event
   useEffect(() => {
     if (gridRef.current && isCurrentWeek) {
       gridRef.current.scrollTop = Math.max(0, currentPx - 120)
     }
-  }, [isCurrentWeek]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    const highlightHandler = () => {
+      setHighlightPulse(true)
+      setTimeout(() => setHighlightPulse(false), 1500)
+      if (gridRef.current) gridRef.current.scrollTop = Math.max(0, currentPx - 120)
+    }
+    
+    window.addEventListener('highlight-today', highlightHandler)
+    return () => window.removeEventListener('highlight-today', highlightHandler)
+  }, [isCurrentWeek, currentPx])
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-surface-border/60 bg-surface-card shadow-xl">
@@ -143,8 +153,10 @@ function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
             return (
               <div
                 key={dayIdx}
-                className={`flex-1 relative border-r border-surface-border/20 last:border-r-0 ${
-                  isToday ? 'bg-indigo-500/[0.025]' : ''
+                className={`flex-1 relative border-r border-surface-border/20 last:border-r-0 transition-all duration-700 ${
+                  isToday 
+                    ? (highlightPulse ? 'bg-indigo-500/20 ring-2 ring-indigo-400/50 shadow-[inset_0_0_30px_rgba(99,102,241,0.25)]' : 'bg-indigo-500/[0.025]')
+                    : ''
                 }`}
               >
                 {/* Hour grid lines */}
@@ -617,6 +629,7 @@ function MeetingWarningBanner({ todayEvents, breakOpportunities }) {
 export default function ProgramPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [weekendAlert, setWeekendAlert] = useState(false)
   const {
     events, connected, connectMicrosoft,
     moodScore, moodFactors, moodLabel, moodReco,
@@ -712,14 +725,22 @@ export default function ProgramPage() {
               <ChevronRight className="w-4 h-4" />
             </button>
 
-            {!isCurrentWeek && (
-              <button
-                onClick={() => { for (let i = 0; i < selectedWeekOffset; i++) prevWeek() }}
-                className="ml-1 px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400 text-[10px] font-semibold hover:bg-sky-500/20 transition-all"
-              >
-                Azi
-              </button>
-            )}
+            <button
+              onClick={() => {
+                if (!isCurrentWeek) {
+                  for (let i = 0; i < selectedWeekOffset; i++) prevWeek()
+                }
+                setTimeout(() => window.dispatchEvent(new CustomEvent('highlight-today')), 50)
+                
+                if (today.getDay() === 0 || today.getDay() === 6) {
+                  setWeekendAlert(true)
+                  setTimeout(() => setWeekendAlert(false), 3500)
+                }
+              }}
+              className="ml-1 px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400 text-[10px] font-semibold hover:bg-sky-500/20 transition-all"
+            >
+              Azi
+            </button>
           </div>
 
           {/* Right — MS365 connect + date */}
@@ -746,6 +767,14 @@ export default function ProgramPage() {
           </div>
         </div>
       </header>
+
+      {/* ── Toast Notification ── */}
+      <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${weekendAlert ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className="bg-emerald-500/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center gap-3 border border-emerald-400/30">
+          <span className="text-lg">🌴</span>
+          <span className="font-medium text-sm">Este weekend! Relaxează-te și lasă AI-ul să ia o pauză.</span>
+        </div>
+      </div>
 
       {/* Demo banner */}
       {!connected && (
