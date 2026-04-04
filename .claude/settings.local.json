@@ -33,7 +33,13 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test@test.com\",\"password\":\"test\"}')",
       "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' -d '{\"name\":\"Andrei Popescu\",\"email\":\"andrei@ecosync.ro\",\"password\":\"demo123\",\"city\":\"Bucharest\",\"preferredSports\":[\"Padel\",\"Tennis\",\"Running\"]}')",
-      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' -d '{\"name\":\"Elena Ionescu\",\"email\":\"elena@ecosync.ro\",\"password\":\"demo123\",\"city\":\"Cluj\",\"preferredSports\":[\"Yoga\",\"Badminton\",\"Cycling\"]}')"
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' -d '{\"name\":\"Elena Ionescu\",\"email\":\"elena@ecosync.ro\",\"password\":\"demo123\",\"city\":\"Cluj\",\"preferredSports\":[\"Yoga\",\"Badminton\",\"Cycling\"]}')",
+      "Bash(curl -s http://localhost:8080/api/breaks/7)",
+      "Bash(python -m json.tool)",
+      "Bash(node --input-type=module)",
+      "Bash(npx acorn:*)",
+      "Bash(npx vite:*)",
+      "Bash(./mvnw compile:*)"
     ]
   }
 }

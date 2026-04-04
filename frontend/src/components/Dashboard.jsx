@@ -1,21 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, X, CalendarDays, Home, Building2 } from 'lucide-react'
+import { LogOut, CalendarDays, Home, Building2, ChevronRight } from 'lucide-react'
 import SmartBreak from './SmartBreak'
-import MatchmakingFeed, { SPORT_ICONS, SPORTS_LIST } from './MatchmakingFeed'
+import MatchmakingFeed from './MatchmakingFeed'
 import FloatingAiAssistant from './FloatingAiAssistant'
 import AnimatedShaderHero from './ui/AnimatedShaderHero'
 import { useAuth } from '../context/AuthContext'
 import { useCalendar } from '../context/CalendarContext'
-
-const TICKER_ITEMS = [
-  '🎾 Alex a postat un meci de Padel pentru azi la 18:00',
-  '🏓 Ioana caută parteneri de Ping Pong — Cluj',
-  '🌿 Elena și-a completat pauza de 3 minute · streak #7',
-  '🤝 Andrei s-a conectat cu Vlad pentru Tennis',
-  '🚴 Sofia caută colegi de drumuri spre birou',
-  '🏸 Elena caută parteneri de Badminton diseară',
-]
 
 function useCountUp(target, duration = 1200) {
   const [value, setValue] = useState(0)
@@ -43,129 +34,85 @@ function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function toDateString(date) {
-  return date.toISOString().split('T')[0]
+const DEFINITIONS = {
+  streak:  'Numărul de zile consecutive în care ai luat cel puțin o pauză activă. Cu cât streak-ul e mai lung, cu atât ești mai consecvent în obiceiurile tale de wellbeing.',
+  mood:    'Scor calculat automat pe baza ședințelor din calendar, pauzelor luate și activităților sportive. Reflectă echilibrul tău energetic la locul de muncă.',
+  matches: 'Activitățile sportive cu colegii tăi luna aceasta. Sportul în echipă construiește conexiuni autentice și îmbunătățește moralul la birou.',
+  breaks:  'Pauzele active luate azi. Obiectivul recomandat: 5 pauze de 3 minute pe zi — cresc concentrarea cu până la 40% și reduc oboseala mentală.',
 }
 
-function ActivityModal({ userId, userName, onClose, onMatchRecorded }) {
-  const today   = toDateString(new Date())
-  const maxDate = toDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+const COLOR_MAP = {
+  emerald: { text: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'rgba(52,211,153,0.2)' },
+  violet:  { text: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'rgba(167,139,250,0.2)' },
+  sky:     { text: 'text-sky-400',     bg: 'bg-sky-400/10',     border: 'rgba(56,189,248,0.2)'  },
+  amber:   { text: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'rgba(251,191,36,0.2)'  },
+}
 
-  const [sport,      setSport]      = useState('')
-  const [date,       setDate]       = useState(today)
-  const [submitting, setSubmitting] = useState(false)
-  const [done,       setDone]       = useState(false)
-
-  const handleSubmit = async () => {
-    if (!sport || !date) return
-    setSubmitting(true)
-    try {
-      await fetch(`/api/matchmaking/${userId}/activity`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activity: sport, date, userName }),
-      })
-      // Posting an activity = initiating a match → record it
-      onMatchRecorded?.()
-    } catch {}
-    setSubmitting(false)
-    setDone(true)
-    setTimeout(onClose, 1400)
-  }
+function FlipCard({ icon, label, target, unit, sub, color, delay, definition }) {
+  const [flipped, setFlipped] = useState(false)
+  const value = useCountUp(target)
+  const c = COLOR_MAP[color]
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      className="animate-fade-in cursor-pointer select-none"
+      style={{ perspective: '1000px', animationDelay: `${delay}ms`, minHeight: '164px' }}
+      onClick={() => setFlipped(f => !f)}
+      title="Apasă pentru definiție"
     >
-      <div className="w-full max-w-md bg-surface border border-surface-border rounded-2xl shadow-2xl animate-slide-up overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
-          <div>
-            <h2 className="text-base font-semibold text-white">Adaugă o activitate</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Invită colegi compatibili să se alăture</p>
+      <div
+        style={{
+          position: 'relative',
+          height: '164px',
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}
+      >
+        {/* ── Front ── */}
+        <div
+          className="absolute inset-0 bg-surface-card rounded-2xl p-5 flex flex-col gap-1 shadow-xl"
+          style={{ backfaceVisibility: 'hidden', border: `1px solid ${c.border}` }}
+        >
+          <div className="flex items-center justify-between">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${c.bg}`}>{icon}</div>
+            <span className="text-[10px] text-slate-700 font-medium select-none">↻ detalii</span>
           </div>
-          <button onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-surface-border flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+          <p className={`text-3xl font-bold mt-1 tabular-nums ${c.text}`}>{value}{unit}</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
         </div>
 
-        {done ? (
-          <div className="px-6 py-10 flex flex-col items-center gap-3 text-center">
-            <div className="w-14 h-14 rounded-full bg-emerald-500/15 flex items-center justify-center text-2xl">🎉</div>
-            <p className="text-white font-semibold">Activitate postată!</p>
-            <p className="text-sm text-slate-400">Colegii compatibili vor fi notificați automat.</p>
-          </div>
-        ) : (
-          <div className="px-6 py-5 flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Sport</label>
-              <select value={sport} onChange={e => setSport(e.target.value)}
-                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors">
-                <option value="">Alege sportul…</option>
-                {SPORTS_LIST.map(s => (
-                  <option key={s} value={s}>{SPORT_ICONS[s] || '🏅'} {s}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Data</label>
-              <input type="date" value={date} min={today} max={maxDate}
-                onChange={e => setDate(e.target.value)}
-                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors [color-scheme:dark]" />
-              <p className="text-[11px] text-slate-600">Poți selecta o dată în intervalul următoarelor 30 de zile.</p>
-            </div>
-
-            <button onClick={handleSubmit} disabled={!sport || !date || submitting}
-              className="mt-1 w-full py-3 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand/25 flex items-center justify-center gap-2">
-              {submitting
-                ? <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Se trimite…</>
-                : 'Postează activitatea →'}
-            </button>
-          </div>
-        )}
+        {/* ── Back ── */}
+        <div
+          className="absolute inset-0 bg-surface-card rounded-2xl p-5 flex flex-col justify-center gap-3 shadow-xl"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', border: `1px solid ${c.border}` }}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl ${c.bg}`}>{icon}</div>
+          <p className={`text-sm font-bold ${c.text}`}>{label}</p>
+          <p className="text-xs text-slate-400 leading-relaxed">{definition}</p>
+          <span className="text-[10px] text-slate-600 mt-auto">↻ apasă pentru a reveni</span>
+        </div>
       </div>
     </div>
   )
 }
 
 export default function Dashboard() {
-  const { user, logout, recordMatchInContext } = useAuth()
+  const { user, logout } = useAuth()
   const { moodScore, moodLabel } = useCalendar()
   const navigate = useNavigate()
-
-  const [tickerIndex,   setTickerIndex]   = useState(0)
-  const [tickerVisible, setTickerVisible] = useState(true)
-  const [showModal,     setShowModal]     = useState(false)
-  const [searchTrigger, setSearchTrigger] = useState({ sport: null, key: 0 })
-
-  const matchmakingRef = useRef(null)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerVisible(false)
-      setTimeout(() => {
-        setTickerIndex(i => (i + 1) % TICKER_ITEMS.length)
-        setTickerVisible(true)
-      }, 400)
-    }, 3500)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleLogout = () => { logout(); navigate('/login') }
 
   const firstName       = user?.name?.split(' ')[0] ?? 'Coleg'
   const preferredSports = user?.preferredSports ?? []
-  const primarySport    = preferredSports[0] ?? 'Padel'
+  const workLocation    = user?.workLocation ?? null
 
-  // Real stats from backend (persisted in DB per user)
-  const breaksTakenToday = user?.breaksTakenToday  ?? 0
-  const currentStreak    = user?.currentStreak     ?? 0
-  const matchesThisMonth = user?.matchesThisMonth  ?? 0
-  const workLocation     = user?.workLocation      ?? null
+  const breaksTakenToday = user?.breaksTakenToday ?? 0
+  const currentStreak    = user?.currentStreak    ?? 0
+  const matchesThisMonth = user?.matchesThisMonth ?? 0
 
-  // Mood score: 40 base + matches contribution + breaks contribution + streak contribution
   const realMoodScore = Math.min(100, Math.round(
     40
     + Math.min(matchesThisMonth * 3, 24)
@@ -173,28 +120,32 @@ export default function Dashboard() {
     + Math.min(currentStreak * 1.5, 12)
   ))
   const displayMoodScore = realMoodScore > 40 ? realMoodScore : moodScore
-  const displayMoodLabel = realMoodScore >= 80 ? { text: 'Excelent 🌟' }
-    : realMoodScore >= 65 ? { text: 'Bine 😊' }
-    : realMoodScore >= 50 ? { text: 'Moderat 😐' }
-    : { text: moodLabel.text }
-
-  const handleFindPartners = () => {
-    setSearchTrigger(prev => ({ sport: primarySport, key: prev.key + 1 }))
-    matchmakingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  const heroSubtitle = preferredSports.length > 0
-    ? `Streak: ${currentStreak} zile · Sporturi: ${preferredSports.slice(0, 3).join(', ')} · ${matchesThisMonth} matches luna aceasta`
-    : `Streak: ${currentStreak} zile · ${matchesThisMonth} matches · ${getGreeting()}, ${firstName}!`
+  const displayMoodLabel = realMoodScore >= 80 ? 'Excelent 🌟'
+    : realMoodScore >= 65 ? 'Bine 😊'
+    : realMoodScore >= 50 ? 'Moderat 😐'
+    : moodLabel.text
 
   const workLocationBadge = workLocation === 'HOME'
-    ? { icon: Home, label: 'Acasă', cls: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' }
+    ? { icon: Home,      label: 'Acasă',    cls: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' }
     : workLocation === 'OFFICE'
     ? { icon: Building2, label: 'La birou', cls: 'text-sky-400 border-sky-500/30 bg-sky-500/10' }
     : null
 
+  // Hero subtitle — descriptive & personal
+  const sportsLine = preferredSports.length > 0
+    ? ` · Sporturi: ${preferredSports.slice(0, 3).join(' · ')}`
+    : ''
+  const streakLine  = currentStreak > 0
+    ? `🔥 ${currentStreak} ${currentStreak === 1 ? 'zi' : 'zile'} de streak consecutiv`
+    : 'Niciun streak activ — ia prima pauză azi!'
+  const matchLine   = matchesThisMonth > 0
+    ? ` · 🤝 ${matchesThisMonth} ${matchesThisMonth === 1 ? 'activitate' : 'activități'} luna aceasta`
+    : ''
+  const heroSubtitle = `${getGreeting()}, ${firstName}! ${streakLine}${matchLine}${sportsLine}.`
+
   return (
     <div className="min-h-screen relative">
+      {/* Ambient background glows */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full opacity-20"
           style={{ background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)', filter: 'blur(60px)' }} />
@@ -202,16 +153,10 @@ export default function Dashboard() {
           style={{ background: 'radial-gradient(circle, #34d399 0%, transparent 70%)', filter: 'blur(60px)' }} />
       </div>
 
+      {/* ── Header ── */}
       <header className="border-b border-surface-border bg-surface-card/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="border-b border-surface-border/50 bg-surface/40 px-6 py-1.5 flex items-center gap-3">
-          <span className="text-xs font-semibold text-brand-light uppercase tracking-widest shrink-0">Live</span>
-          <div className="w-px h-3 bg-surface-border" />
-          <p className={`text-xs text-slate-400 transition-opacity duration-300 truncate ${tickerVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {TICKER_ITEMS[tickerIndex]}
-          </p>
-        </div>
-
         <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
               <img src="/logo.png?v=2" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-md" />
@@ -222,7 +167,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right controls */}
+          <div className="flex items-center gap-2">
             {workLocationBadge && (
               <div className={`hidden sm:flex items-center gap-1.5 text-xs border rounded-xl px-3 py-1.5 ${workLocationBadge.cls}`}>
                 <workLocationBadge.icon className="w-3 h-3" />
@@ -230,117 +176,97 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-              </span>
-              <span className="hidden sm:inline">Live</span>
-            </div>
+            {/* Calendar shortcut — prominent */}
+            <button
+              onClick={() => navigate('/program')}
+              title="Programul meu"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-xl border border-surface-border bg-surface hover:bg-indigo-500/10 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all text-xs font-medium"
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span className="hidden sm:inline">Program</span>
+            </button>
 
-            <div className="flex items-center gap-2.5 bg-surface border border-surface-border rounded-xl px-3 py-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white">
+            {/* Clickable user pill → /my-profile */}
+            <button
+              onClick={() => navigate('/my-profile')}
+              className="flex items-center gap-2.5 bg-surface border border-surface-border hover:border-brand/50 rounded-xl px-3 py-2 transition-all duration-200 group"
+            >
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white shadow">
                 {getInitials(user?.name)}
               </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium text-white leading-tight">{user?.name}</p>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-medium text-white leading-tight group-hover:text-brand-light transition-colors">{user?.name}</p>
                 <p className="text-[10px] text-slate-500">{user?.city} · {preferredSports.slice(0, 2).join(', ')}</p>
               </div>
-            </div>
+              <ChevronRight className="hidden sm:block w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 transition-colors" />
+            </button>
 
-            <button onClick={handleLogout} title="Deconectare"
-              className="w-9 h-9 rounded-xl border border-surface-border bg-surface hover:bg-red-500/10 hover:border-red-500/30 flex items-center justify-center text-slate-400 hover:text-red-400 transition-all">
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              title="Deconectare"
+              className="w-9 h-9 rounded-xl border border-surface-border bg-surface hover:bg-red-500/10 hover:border-red-500/30 flex items-center justify-center text-slate-400 hover:text-red-400 transition-all"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
 
+      {/* ── Main ── */}
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Hero — no buttons */}
         <AnimatedShaderHero
           trustBadge={{ text: 'Pauza ta inteligentă durează 3 minute. Relaxează-te!' }}
           headline={{ line1: 'SyncFit', line2: 'Wellbeing & Sport' }}
           subtitle={heroSubtitle}
-          buttons={{
-            primary:   { text: 'Adaugă o activitate',                onClick: () => setShowModal(true) },
-            secondary: { text: 'Găsește Partener (Sporturile tale)', onClick: handleFindPartners },
-          }}
           className="animate-fade-in"
         />
 
+        {/* Flip stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AnimatedStatCard
+          <FlipCard
             icon="🔥" label="Streak" target={currentStreak} unit=" zile"
             sub={currentStreak > 0 ? `${currentStreak} zile consecutive ✨` : 'Ia prima pauză azi!'}
-            color="emerald" delay={0}
+            color="emerald" delay={0} definition={DEFINITIONS.streak}
           />
-          <AnimatedStatCard
+          <FlipCard
             icon="😊" label="Mood Score" target={displayMoodScore} unit="/100"
-            sub={displayMoodLabel.text}
-            color="violet" delay={100} onLink={() => navigate('/program')}
+            sub={displayMoodLabel}
+            color="violet" delay={100} definition={DEFINITIONS.mood}
           />
-          <AnimatedStatCard
+          <FlipCard
             icon="🤝" label="Matches" target={matchesThisMonth} unit=""
             sub="Activități luna aceasta"
-            color="sky" delay={200}
+            color="sky" delay={200} definition={DEFINITIONS.matches}
           />
-          <AnimatedStatCard
+          <FlipCard
             icon="☕" label="Pauze azi" target={breaksTakenToday} unit=""
             sub={breaksTakenToday >= 5 ? '🎉 Obiectiv atins!' : `Obiectiv: 5 · mai ${Math.max(0, 5 - breaksTakenToday)} rămase`}
-            color="amber" delay={300}
+            color="amber" delay={300} definition={DEFINITIONS.breaks}
           />
         </div>
 
+        {/* Smart Break + Matchmaking */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-2 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            <SmartBreak userId={user?.userId ?? 1} workLocation={workLocation} />
+            <SmartBreak
+              userId={user?.userId ?? 1}
+              workLocation={workLocation}
+              userSports={preferredSports}
+            />
           </div>
-          <div ref={matchmakingRef} className="lg:col-span-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <div className="lg:col-span-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
             <MatchmakingFeed
               userId={user?.userId ?? 1}
               userName={user?.name}
-              autoSearch={searchTrigger}
+              autoSearch={{ sport: null, key: 0 }}
             />
           </div>
         </div>
       </main>
 
       <FloatingAiAssistant />
-
-      {showModal && (
-        <ActivityModal
-          userId={user?.userId ?? 1}
-          userName={user?.name}
-          onClose={() => setShowModal(false)}
-          onMatchRecorded={recordMatchInContext}
-        />
-      )}
-    </div>
-  )
-}
-
-function AnimatedStatCard({ icon, label, target, unit, sub, color, delay, onLink }) {
-  const value = useCountUp(target)
-  const colorMap = {
-    emerald: { text: 'text-emerald-400', bg: 'bg-emerald-400/10', glow: 'hover:shadow-emerald-500/10' },
-    violet:  { text: 'text-violet-400',  bg: 'bg-violet-400/10',  glow: 'hover:shadow-violet-500/10' },
-    sky:     { text: 'text-sky-400',     bg: 'bg-sky-400/10',     glow: 'hover:shadow-sky-500/10'    },
-    amber:   { text: 'text-amber-400',   bg: 'bg-amber-400/10',   glow: 'hover:shadow-amber-500/10'  },
-  }
-  const c = colorMap[color]
-  return (
-    <div
-      onClick={onLink}
-      className={`stat-card hover:scale-[1.02] hover:shadow-xl ${c.glow} transition-all duration-300 animate-fade-in ${onLink ? 'cursor-pointer' : 'cursor-default'}`}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-center justify-between">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${c.bg}`}>{icon}</div>
-        {onLink && <CalendarDays className="w-3.5 h-3.5 text-slate-600" />}
-      </div>
-      <p className={`text-3xl font-bold mt-2 tabular-nums ${c.text}`}>{value}{unit}</p>
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">{label}</p>
-      <p className="text-xs text-slate-500">{sub}</p>
     </div>
   )
 }
