@@ -19,9 +19,9 @@ public class MockDataService {
 
         // ── Meeting calendar ─────────────────────────────────────────────────────
         // Three meetings spread through the day → algorithm produces breaks at 11:00 and 14:00
-        meetingSlots.add(new MeetingSlot(9,  10, "Sprint Planning"));
-        meetingSlots.add(new MeetingSlot(12, 13, "Team Sync"));
-        meetingSlots.add(new MeetingSlot(15, 16, "Code Review"));
+        meetingSlots.add(new MeetingSlot(9, 0, 10, 0, "Sprint Planning"));
+        meetingSlots.add(new MeetingSlot(12, 0, 13, 0, "Team Sync"));
+        meetingSlots.add(new MeetingSlot(15, 0, 16, 0, "Code Review"));
 
         // ── Employees ─────────────────────────────────────────────────────────────
         // București
@@ -117,7 +117,7 @@ public class MockDataService {
         int currentHour = LocalTime.now().getHour();
         java.util.Set<Integer> blocked = new java.util.HashSet<>();
         for (MeetingSlot m : meetingSlots) {
-            for (int h = m.getStartHour(); h < m.getEndHour(); h++) blocked.add(h);
+            for (int h = m.getStartHour(); h <= m.getEndHour(); h++) blocked.add(h);
         }
         for (int h = currentHour + 1; h < 18; h++) {
             if (!blocked.contains(h)) return String.format("%02d:00", h);

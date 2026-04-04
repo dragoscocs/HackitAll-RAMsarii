@@ -3,6 +3,7 @@ package com.ecosync.service;
 import com.ecosync.model.BreakSuggestion;
 import com.ecosync.model.DailyBreakSchedule;
 import com.ecosync.model.MeetingSlot;
+import com.ecosync.model.SmartBreak;
 import com.ecosync.model.User;
 import com.ecosync.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -31,11 +32,6 @@ public class WellbeingService {
 
     // ── Daily schedule ────────────────────────────────────────────────────────
 
-    /**
-     * Returns the complete break schedule for a user's workday,
-     * computed by SmartBreakService using the user's stored work hours
-     * and the simulated meeting calendar from MockDataService.
-     */
     public DailyBreakSchedule getDailySchedule(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilizator negăsit: " + userId));
@@ -44,55 +40,67 @@ public class WellbeingService {
         int endHour   = user.getWorkEndHour();
 
         List<MeetingSlot> meetings     = mockDataService.getMeetingSlots();
-        List<Integer>     breakHours   = smartBreakService.computeBreaks(startHour, endHour, meetings);
-        int               currentHour  = LocalTime.now().getHour();
-        int               nextBreak    = smartBreakService.findNextBreakHour(breakHours, currentHour);
+        List<SmartBreak>  smartBreaks  = smartBreakService.computeBreaks(startHour, endHour, meetings);
+        
+        LocalTime now = LocalTime.now();
+        SmartBreak nextBreak = smartBreakService.findNextBreak(smartBreaks, now);
 
-        return new DailyBreakSchedule(startHour, endHour, breakHours, meetings, nextBreak);
+        return new DailyBreakSchedule(startHour, endHour, smartBreaks, meetings, nextBreak);
     }
 
     // ── Single break suggestion (next break + AI text) ────────────────────────
 
     public BreakSuggestion suggestBreak(Long userId) {
-        String workLocation = userRepository.findById(userId)
-            .map(User::getWorkLocation)
-            .orElse(null);
-        return suggestBreak(userId, workLocation);
+        User user = userRepository.findById(userId).orElse(null);
+        return suggestBreak(userId, user != null ? user.getWorkLocation() : null);
     }
 
     public BreakSuggestion suggestBreak(Long userId, String workLocation) {
-        // Use the smart algorithm to find the next break time
+        User user = userRepository.findById(userId).orElse(null);
+        
         DailyBreakSchedule schedule  = getDailySchedule(userId);
-        int nextBreakHour = schedule.getNextBreakHour();
+        SmartBreak nextBreak = schedule.getNextBreak();
 
         String breakTime;
-        if (nextBreakHour >= 0) {
-            breakTime = String.format("%02d:00", nextBreakHour);
+        String breakReason = "Pauză obișnuită";
+        if (nextBreak != null) {
+            breakTime = nextBreak.getTime().toString();
+            breakReason = nextBreak.getReason();
         } else {
-            // No more breaks today — fall back to legacy behaviour
+            // No more breaks today
             breakTime = mockDataService.findNextBreakSlot();
+            breakReason = "Fără pauze pre-planificate; relaxați-vă la liber.";
         }
 
         String locationContext;
         if ("HOME".equals(workLocation)) {
-            locationContext = "Angajatul lucrează de ACASĂ azi. Sugerează activități potrivite pentru acasă: " +
-                "exerciții ușoare în cameră, ieșit pe balcon, stretching la birou de acasă, " +
-                "respirații adânci, hidratare, o plimbare scurtă în jur de casă.";
+            locationContext = "Lucrează de ACASĂ.";
         } else if ("OFFICE".equals(workLocation)) {
-            locationContext = "Angajatul lucrează de la BIROU azi. Sugerează activități potrivite pentru birou: " +
-                "o plimbare până la terasă, stretching ușor la birou, mers să ia un pahar cu apă, " +
-                "exerciții de respirație, o scurtă conversație cu un coleg, privit pe fereastră.";
+            locationContext = "Lucrează de la BIROU.";
         } else {
-            locationContext = "Sugerează o activitate de relaxare generică, scurtă și eficientă.";
+            locationContext = "";
+        }
+
+        String personaContext = "";
+        String healthContext = "";
+        if (user != null) {
+            if (user.getUserPersonaPrompt() != null && !user.getUserPersonaPrompt().isBlank()) {
+                personaContext = "Profil personalitate: " + user.getUserPersonaPrompt() + ". Adaptează tonul!";
+            }
+            if (user.getUserHealthLimits() != null && !user.getUserHealthLimits().isBlank()) {
+                healthContext = "Limite fizice (CRITIC: Nu le încălca sub nicio formă): " + user.getUserHealthLimits() + ". ";
+            }
         }
 
         String prompt = String.format(
-            "Ești SyncFit, asistentul AI de wellbeing corporativ. " +
-            "Generează o sugestie de pauză personalizată în română, MAX 35 de cuvinte, caldă și motivantă. " +
+            "Ești SyncFit, asistentul corporativ. " +
+            "Sugerează o pauză scurtă în română, MAX 35 cuvinte. " +
             "%s " +
-            "Ora pauzei: %s. " +
-            "Începe direct cu sugestia, fără introduceri.",
-            locationContext, breakTime
+            "Ora: %s. Motiv pauză impus de algoritm: '%s'. " +
+            "%s " +
+            "%s " +
+            "Fii natural. Treci la subiect.",
+            locationContext, breakTime, breakReason, personaContext, healthContext
         );
 
         String suggestionText = aiService.getAiRecommendation(prompt);

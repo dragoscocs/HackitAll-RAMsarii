@@ -1,115 +1,153 @@
 package com.ecosync.service;
 
 import com.ecosync.model.MeetingSlot;
+import com.ecosync.model.SmartBreak;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * ═══════════════════════════════════════════════════════════════════
- *  SmartBreakService — Core Break Scheduling Algorithm
- * ═══════════════════════════════════════════════════════════════════
- *
- * Business Rules (all enforced):
- *
- *  R1. Breaks are only at EXACT hours (10:00, 11:00 … never 10:15).
- *
- *  R2. No break during the FIRST hour of work.
- *      → If work starts at 09:00, first possible break is 10:00.
- *
- *  R3. No break during the LAST hour of work.
- *      → If work ends at 17:00, last possible break is 16:00.
- *      → The window is: (startHour, endHour) exclusive on both ends.
- *
- *  R4. No break that overlaps a MEETING.
- *      → Hour H is blocked if any meeting covers it:
- *         meetingStartHour <= H < meetingEndHour
- *
- *  R5. At least one break every TWO consecutive work hours.
- *      → If the user has worked 2h without a break (and no meeting),
- *        a break MUST be inserted at the current candidate hour.
- *      → If that hour is blocked by a meeting the "debt" counter
- *        is reset (meeting = forced interruption, satisfies the rule).
- */
 @Service
 public class SmartBreakService {
 
-    /**
-     * Computes the full list of scheduled break hours for a workday.
-     *
-     * @param startHour  First hour of the workday    (e.g. 9 for 09:00)
-     * @param endHour    Last  hour of the workday    (e.g. 17 for 17:00)
-     * @param meetings   Today's meeting list (sorted or unsorted — handled internally)
-     * @return           Sorted list of integer hours when breaks are scheduled
-     */
-    public List<Integer> computeBreaks(int startHour, int endHour, List<MeetingSlot> meetings) {
+    public List<SmartBreak> computeBreaks(int startHour, int endHour, List<MeetingSlot> meetings) {
+        List<SmartBreak> resultBreaks = new ArrayList<>();
+        
+        LocalTime workStart = LocalTime.of(startHour, 0);
+        LocalTime workEnd = LocalTime.of(endHour, 0);
+        
+        LocalTime bufferStart = workStart.plusHours(1);
+        LocalTime bufferEnd = workEnd.minusHours(1);
 
-        // ── Guard: need at least 3 hours of work (start+1 … end-1) ─────────
-        if (endHour - startHour < 3) {
-            return Collections.emptyList();
-        }
+        // Sort and filter meetings
+        List<MeetingSlot> sortedMeetings = meetings.stream()
+                .filter(m -> {
+                    LocalTime mStart = LocalTime.of(m.getStartHour(), m.getStartMinute());
+                    LocalTime mEnd = LocalTime.of(m.getEndHour(), m.getEndMinute());
+                    return mEnd.isAfter(workStart) && mStart.isBefore(workEnd);
+                })
+                .sorted(Comparator.comparing(m -> LocalTime.of(m.getStartHour(), m.getStartMinute())))
+                .collect(Collectors.toList());
 
-        // ── 1. Build the set of "blocked" hours (covered by a meeting) ──────
-        //    A slot H is blocked if any meeting satisfies: start <= H < end
-        Set<Integer> blockedByMeeting = new HashSet<>();
-        for (MeetingSlot m : meetings) {
-            for (int h = m.getStartHour(); h < m.getEndHour(); h++) {
-                blockedByMeeting.add(h);
-            }
-        }
-
-        // ── 2. Define the candidate window [startHour+1 … endHour-1] ────────
-        //    R2: skip startHour   (first hour)
-        //    R3: skip endHour-1   (last hour before end) AND endHour itself
-        int windowStart = startHour + 1; // earliest possible break hour
-        int windowEnd   = endHour - 1;   // latest  possible break hour (inclusive)
-
-        // ── 3. Walk through the window hour by hour ─────────────────────────
-        List<Integer> scheduled    = new ArrayList<>();
-        int consecutiveWorkHours   = 0; // hours worked without a break or meeting
-
-        for (int h = startHour; h < endHour; h++) {
-
-            boolean inBreakWindow = (h >= windowStart && h <= windowEnd);
-            boolean blockedNow    = blockedByMeeting.contains(h);
-
-            if (blockedNow) {
-                // ── Meeting hour: natural interruption ───────────────────────
-                // Reset the consecutive counter — being in a meeting counts
-                // as an interruption (the user is not at their desk).
-                consecutiveWorkHours = 0;
-
-            } else {
-                // ── Free hour: consider adding a break ──────────────────────
-                consecutiveWorkHours++;
-
-                if (inBreakWindow) {
-                    // R5: mandatory break after 2 consecutive hours
-                    boolean mustBreak = (consecutiveWorkHours >= 2);
-
-                    if (mustBreak) {
-                        scheduled.add(h);
-                        consecutiveWorkHours = 0; // reset after taking a break
-                    }
+        // 1. Identify Fatigue Blocks (Continuous meetings with < 5 min gap)
+        List<List<MeetingSlot>> fatigueBlocks = new ArrayList<>();
+        if (!sortedMeetings.isEmpty()) {
+            List<MeetingSlot> currentBlock = new ArrayList<>();
+            currentBlock.add(sortedMeetings.get(0));
+            
+            for (int i = 1; i < sortedMeetings.size(); i++) {
+                MeetingSlot prev = currentBlock.get(currentBlock.size() - 1);
+                MeetingSlot curr = sortedMeetings.get(i);
+                
+                LocalTime prevEnd = LocalTime.of(prev.getEndHour(), prev.getEndMinute());
+                LocalTime currStart = LocalTime.of(curr.getStartHour(), curr.getStartMinute());
+                
+                long gapMin = ChronoUnit.MINUTES.between(prevEnd, currStart);
+                if (gapMin < 5) {
+                    currentBlock.add(curr);
+                } else {
+                    fatigueBlocks.add(new ArrayList<>(currentBlock));
+                    currentBlock = new ArrayList<>();
+                    currentBlock.add(curr);
                 }
-                // If NOT in window (first or last hour) we simply accumulate
-                // but do NOT schedule a break.
+            }
+            fatigueBlocks.add(currentBlock);
+        }
+
+        // Schedule Priority 1 Breaks: If block duration >= 90 mins
+        for (List<MeetingSlot> block : fatigueBlocks) {
+            MeetingSlot first = block.get(0);
+            MeetingSlot last = block.get(block.size() - 1);
+            
+            LocalTime blockStart = LocalTime.of(first.getStartHour(), first.getStartMinute());
+            LocalTime blockEnd = LocalTime.of(last.getEndHour(), last.getEndMinute());
+            
+            long totalDurationMins = ChronoUnit.MINUTES.between(blockStart, blockEnd);
+            
+            if (totalDurationMins >= 90) {
+                LocalTime breakTime = blockEnd.plusMinutes(2);
+                if (!breakTime.isBefore(workStart) && !breakTime.isAfter(workEnd)) {
+                    resultBreaks.add(new SmartBreak(
+                            "FATIGUE_RECOVERY",
+                            breakTime,
+                            "Recuperare post-efort intensiv (" + totalDurationMins + " min continue)"
+                    ));
+                }
             }
         }
 
-        // ── 4. Return sorted list (already chronological from the loop) ─────
-        return Collections.unmodifiableList(scheduled);
+        // Target 6 breaks always
+        int neededRegularBreaks = 6 - resultBreaks.size();
+
+        // Calculate free slots for regular breaks
+        List<TimeSlot> freeSlots = new ArrayList<>();
+        LocalTime cursor = bufferStart;
+
+        for (MeetingSlot m : sortedMeetings) {
+            LocalTime mStart = LocalTime.of(m.getStartHour(), m.getStartMinute());
+            LocalTime mEnd = LocalTime.of(m.getEndHour(), m.getEndMinute());
+            
+            if (mStart.isAfter(cursor) && cursor.isBefore(bufferEnd)) {
+                LocalTime slotEnd = mStart.isBefore(bufferEnd) ? mStart : bufferEnd;
+                long gapMin = ChronoUnit.MINUTES.between(cursor, slotEnd);
+                if (gapMin >= 15) {
+                    freeSlots.add(new TimeSlot(cursor, slotEnd));
+                }
+            }
+            if (mEnd.isAfter(cursor)) {
+                cursor = mEnd;
+            }
+        }
+
+        if (cursor.isBefore(bufferEnd)) {
+            long gapMin = ChronoUnit.MINUTES.between(cursor, bufferEnd);
+            if (gapMin >= 15) {
+                freeSlots.add(new TimeSlot(cursor, bufferEnd));
+            }
+        }
+
+        // Distribute neededRegularBreaks over freeSlots
+        for (TimeSlot slot : freeSlots) {
+            LocalTime slotCursor = slot.start.plusMinutes(5);
+            LocalTime maxSlotCursor = slot.end.minusMinutes(5);
+            
+            while (slotCursor.isBefore(maxSlotCursor) && neededRegularBreaks > 0) {
+                if (isValidGap(slotCursor, resultBreaks)) {
+                    resultBreaks.add(new SmartBreak(
+                            "REGULAR",
+                            slotCursor,
+                            "Pauză de distribuție activă"
+                    ));
+                    neededRegularBreaks--;
+                    slotCursor = slotCursor.plusMinutes(45);
+                } else {
+                    slotCursor = slotCursor.plusMinutes(5);
+                }
+            }
+        }
+
+        // Sort breaks chronologically
+        resultBreaks.sort(Comparator.comparing(SmartBreak::getTime));
+        return resultBreaks;
     }
 
-    /**
-     * Parses a workSchedule string ("8-16", "9-17", "10-18", "flexible")
-     * into a two-element int array: [startHour, endHour].
-     *
-     * "flexible" is treated as 9–18 (longest reasonable window).
-     */
+    private boolean isValidGap(LocalTime proposedTime, List<SmartBreak> currentBreaks) {
+        for (SmartBreak b : currentBreaks) {
+            long diffMins = Math.abs(ChronoUnit.MINUTES.between(b.getTime(), proposedTime));
+            if (diffMins < 45) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public int[] parseWorkSchedule(String workSchedule) {
         if (workSchedule == null || workSchedule.isBlank()) {
-            return new int[]{9, 17}; // safe default
+            return new int[]{9, 17};
         }
         if ("flexible".equalsIgnoreCase(workSchedule.trim())) {
             return new int[]{9, 18};
@@ -117,47 +155,26 @@ public class SmartBreakService {
         try {
             String[] parts = workSchedule.trim().split("-");
             int start = Integer.parseInt(parts[0].trim());
-            int end   = Integer.parseInt(parts[1].trim());
+            int end = Integer.parseInt(parts[1].trim());
             return new int[]{start, end};
         } catch (Exception e) {
-            return new int[]{9, 17}; // fallback on parse error
+            return new int[]{9, 17};
         }
     }
 
-    /**
-     * Returns the next scheduled break hour that is >= currentHour.
-     * Returns -1 if there are no more breaks today.
-     */
-    public int findNextBreakHour(List<Integer> scheduledBreaks, int currentHour) {
-        return scheduledBreaks.stream()
-                .filter(h -> h >= currentHour)
+    public SmartBreak findNextBreak(List<SmartBreak> breaks, LocalTime currentTime) {
+        return breaks.stream()
+                .filter(b -> !b.getTime().isBefore(currentTime))
                 .findFirst()
-                .orElse(-1);
+                .orElse(null);
     }
 
-    /**
-     * Precalculates the total number of required breaks per day based on a strict 1.5-hour interval.
-     * Rules:
-     * 1. O pauză este planificată matematic la fiecare 1.5 ore.
-     * 2. Nicio pauză în prima oră și în ultima oră (t <= totalHours - 1.0).
-     * 3. Totalul trebuie menținut obligatoriu între 2 și 6 pauze.
-     */
-    public int precalculateNumberOfBreaks(int startHour, int endHour) {
-        int totalHours = endHour - startHour;
-        
-        if (totalHours <= 2) {
-            return 2; // Forțați minim 2 conform cerinței
+    private static class TimeSlot {
+        LocalTime start;
+        LocalTime end;
+        TimeSlot(LocalTime start, LocalTime end) {
+            this.start = start;
+            this.end = end;
         }
-
-        int breaks = 0;
-        // Interval de verificare: 1.5, 3.0, 4.5...
-        // Condiție restrânsă: < 1.0 nu va fi atinsă (primul e 1.5)
-        // t <= totalHours - 1.0 (evită ultima oră asumată)
-        for (double t = 1.5; t <= totalHours - 1.0; t += 1.5) {
-            breaks++;
-        }
-
-        // Clamp între 2 și 6
-        return Math.max(2, Math.min(6, breaks));
     }
 }

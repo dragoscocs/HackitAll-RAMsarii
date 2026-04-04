@@ -22,20 +22,19 @@ public class AiService {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.api.url}")
+    @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent}")
     private String geminiApiUrl;
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, String> responseCache = new ConcurrentHashMap<>();
 
-    private static final String SYSTEM_PROMPT =
-        "SYSTEM: Ești SyncFit, asistent AI corporate. " +
-        "REGULI: " +
-        "1. Răspunde în MAXIM 40 de cuvinte. " +
-        "2. Analizează imaginile încărcate SAU răspunde doar despre sport, nutriție, ergonomie. " +
-        "3. Refuză politicos orice alt subiect. " +
-        "CONTEXT CONVERSAȚIE:";
+    private static final String SYSTEM_PROMPT = "SYSTEM: Ești SyncFit, asistent AI corporate. " +
+            "REGULI: " +
+            "1. Răspunde în MAXIM 40 de cuvinte. " +
+            "2. Analizează imaginile încărcate SAU răspunde doar despre sport, nutriție, ergonomie. " +
+            "3. Refuză politicos orice alt subiect. " +
+            "CONTEXT CONVERSAȚIE:";
 
     public AiService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
@@ -60,10 +59,10 @@ public class AiService {
         }
 
         String lastUserMessage = history.stream()
-            .filter(m -> "user".equals(m.role()))
-            .reduce((first, second) -> second)
-            .map(ChatMessage::content)
-            .orElse("");
+                .filter(m -> "user".equals(m.role()))
+                .reduce((first, second) -> second)
+                .map(ChatMessage::content)
+                .orElse("");
 
         String cacheKey = lastUserMessage.toLowerCase().trim();
 
@@ -105,12 +104,12 @@ public class AiService {
     private String extractAndCleanJson(String geminiResponse) throws Exception {
         JsonNode root = objectMapper.readTree(geminiResponse);
         String text = root.path("candidates").get(0)
-                          .path("content").path("parts").get(0)
-                          .path("text").asText();
+                .path("content").path("parts").get(0)
+                .path("text").asText();
         // Strip markdown code fences if Gemini wrapped the JSON
         text = text.replaceAll("(?s)```json\\s*", "")
-                   .replaceAll("(?s)```\\s*", "")
-                   .trim();
+                .replaceAll("(?s)```\\s*", "")
+                .trim();
         return text;
     }
 
@@ -122,13 +121,11 @@ public class AiService {
         Map<String, Object> requestBody;
         if (generationConfig != null) {
             requestBody = Map.of(
-                    "contents", new Object[]{ Map.of("parts", new Object[]{ Map.of("text", prompt) }) },
-                    "generationConfig", generationConfig
-            );
+                    "contents", new Object[] { Map.of("parts", new Object[] { Map.of("text", prompt) }) },
+                    "generationConfig", generationConfig);
         } else {
             requestBody = Map.of(
-                    "contents", new Object[]{ Map.of("parts", new Object[]{ Map.of("text", prompt) }) }
-            );
+                    "contents", new Object[] { Map.of("parts", new Object[] { Map.of("text", prompt) }) });
         }
 
         return webClient.post()
@@ -142,51 +139,52 @@ public class AiService {
 
     public SmartBreakResponse generateSmartBreak(User user, SmartBreakRequest request) {
         if (geminiApiKey == null || geminiApiKey.isEmpty()) {
-            return new SmartBreakResponse("Pauză de Apă", "Timp pentru un pahar cu apă rece. Relaxează-te un minut!", 2, "hydrate");
+            return new SmartBreakResponse("Pauză de Apă", "Timp pentru un pahar cu apă rece. Relaxează-te un minut!", 2,
+                    "hydrate");
         }
 
         String persona = (user.getUserPersonaPrompt() != null && !user.getUserPersonaPrompt().isBlank())
-            ? user.getUserPersonaPrompt()
-            : "Ești un antrenor de wellbeing empatic și profesionist.";
+                ? user.getUserPersonaPrompt()
+                : "Ești un antrenor de wellbeing empatic și profesionist.";
 
         String healthLimits = (user.getUserHealthLimits() != null && !user.getUserHealthLimits().isBlank())
-            ? user.getUserHealthLimits()
-            : "Nicio limitare fizică menționată.";
+                ? user.getUserHealthLimits()
+                : "Nicio limitare fizică menționată.";
 
         String preferredSports = (user.getPreferredSports() != null && !user.getPreferredSports().isEmpty())
-            ? String.join(", ", user.getPreferredSports())
-            : "Niciun sport preferat setat.";
+                ? String.join(", ", user.getPreferredSports())
+                : "Niciun sport preferat setat.";
 
         String prompt = String.format(
-            "SYSTEM INSTRUCTION:\\n" +
-            "You are generating a highly personalized short break for a user working at a desk.\\n" +
-            "TONE/PERSONA (CRITICAL): %s\\n" +
-            "HEALTH LIMITS (ABSOLUTE BOUNDARY, NEVER VIOLATE): %s\\n" +
-            "FAVORITE SPORTS (Try to relate the break to these if possible): %s\\n\\n" +
-            "DYNAMIC CONTEXT:\\n" +
-            "- Current Mood (1=exhausted, 5=energetic): %d\\n" +
-            "- Schedule Context: %s\\n" +
-            "- Local Time: %s\\n\\n" +
-            "TASK: Generate a break recommendation that perfectly matches the persona's tone, fits their energy level (%d), accommodates their schedule context, and strictly respects their health limits.\\n" +
-            "Return the output STRICTLY in Romanian (description_ro) using the exact JSON schema requested.",
-            persona, healthLimits, preferredSports, request.currentMood(), request.scheduleContext(), request.timeOfDay(), request.currentMood()
-        );
+                "SYSTEM INSTRUCTION:\\n" +
+                        "You are generating a highly personalized short break for a user working at a desk.\\n" +
+                        "TONE/PERSONA (CRITICAL): %s\\n" +
+                        "HEALTH LIMITS (ABSOLUTE BOUNDARY, NEVER VIOLATE): %s\\n" +
+                        "FAVORITE SPORTS (Try to relate the break to these if possible): %s\\n\\n" +
+                        "DYNAMIC CONTEXT:\\n" +
+                        "- Current Mood (1=exhausted, 5=energetic): %d\\n" +
+                        "- Schedule Context: %s\\n" +
+                        "- Local Time: %s\\n\\n" +
+                        "TASK: Generate a break recommendation that perfectly matches the persona's tone, fits their energy level (%d), accommodates their schedule context, and strictly respects their health limits.\\n"
+                        +
+                        "Return the output STRICTLY in Romanian (description_ro) using the exact JSON schema requested.",
+                persona, healthLimits, preferredSports, request.currentMood(), request.scheduleContext(),
+                request.timeOfDay(), request.currentMood());
 
         Map<String, Object> schema = Map.of(
-            "type", "object",
-            "properties", Map.of(
-                "break_title", Map.of("type", "string"),
-                "description_ro", Map.of("type", "string"),
-                "duration_minutes", Map.of("type", "integer"),
-                "activity_type", Map.of("type", "string", "enum", List.of("stretch", "hydrate", "breathe", "walk", "mindfulness"))
-            ),
-            "required", List.of("break_title", "description_ro", "duration_minutes", "activity_type")
-        );
+                "type", "object",
+                "properties", Map.of(
+                        "break_title", Map.of("type", "string"),
+                        "description_ro", Map.of("type", "string"),
+                        "duration_minutes", Map.of("type", "integer"),
+                        "activity_type",
+                        Map.of("type", "string", "enum",
+                                List.of("stretch", "hydrate", "breathe", "walk", "mindfulness"))),
+                "required", List.of("break_title", "description_ro", "duration_minutes", "activity_type"));
 
         Map<String, Object> generationConfig = Map.of(
-            "responseMimeType", "application/json",
-            "responseSchema", schema
-        );
+                "responseMimeType", "application/json",
+                "responseSchema", schema);
 
         try {
             String rawResponse = callGeminiApi(prompt, generationConfig);
@@ -194,35 +192,35 @@ public class AiService {
             return objectMapper.readValue(jsonText, SmartBreakResponse.class);
         } catch (Exception e) {
             System.err.println("[SmartBreak Error]: " + e.getMessage());
-            return new SmartBreakResponse("Respiră Adânc", "Ia o mică pauză și respiră de 10 ori adânc pentru a te deconecta.", 3, "breathe");
+            return new SmartBreakResponse("Respiră Adânc",
+                    "Ia o mică pauză și respiră de 10 ori adânc pentru a te deconecta.", 3, "breathe");
         }
     }
 
     /**
-     * Constructs a Gemini multimodal request with both a text prompt and an inline Base64-encoded image.
-     * The `parts` array must contain the text part first, followed by the inlineData part,
+     * Constructs a Gemini multimodal request with both a text prompt and an inline
+     * Base64-encoded image.
+     * The `parts` array must contain the text part first, followed by the
+     * inlineData part,
      * as required by the GenerativeLanguage API spec.
      */
     private String callGeminiMultimodal(String textPrompt, String imageBase64) {
         Map<String, Object> textPart = Map.of("text", textPrompt);
         Map<String, Object> imagePart = Map.of(
-            "inlineData", Map.of(
-                "mimeType", "image/jpeg",
-                "data", imageBase64
-            )
-        );
+                "inlineData", Map.of(
+                        "mimeType", "image/jpeg",
+                        "data", imageBase64));
         Map<String, Object> requestBody = Map.of(
-            "contents", new Object[]{
-                Map.of("parts", new Object[]{ textPart, imagePart })
-            }
-        );
+                "contents", new Object[] {
+                        Map.of("parts", new Object[] { textPart, imagePart })
+                });
         return webClient.post()
-            .uri(geminiApiUrl + "?key=" + geminiApiKey)
-            .header("Content-Type", "application/json")
-            .body(Mono.just(requestBody), Map.class)
-            .retrieve()
-            .bodyToMono(String.class)
-            .block();
+                .uri(geminiApiUrl + "?key=" + geminiApiKey)
+                .header("Content-Type", "application/json")
+                .body(Mono.just(requestBody), Map.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
     }
 
     private String getMockAiResponse(String prompt) {

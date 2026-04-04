@@ -122,6 +122,16 @@ export default function MyProfilePage() {
         </div>
       </header>
 
+      {/* ── Toast Notification ── */}
+      <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${saved ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className="bg-emerald-500/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center gap-3 border border-emerald-400/30">
+          <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <Check className="w-3.5 h-3.5" />
+          </div>
+          <span className="font-medium text-sm">Modificările au fost salvate cu succes!</span>
+        </div>
+      </div>
+
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-5 animate-fade-in">
         {/* ── Avatar & identity ── */}
         <div className="card flex items-center gap-5">
