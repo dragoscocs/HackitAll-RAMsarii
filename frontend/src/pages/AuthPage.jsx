@@ -88,7 +88,7 @@ export default function AuthPage() {
   }
 
   const handleGoogleLogin = () => {
-    alert('Google OAuth: adaugă Google Client ID în application.properties pentru a activa. Demo: folosește conturile de test (ex: gigel@ecosync.ro / demo123)')
+    alert('Google OAuth: adaugă Google Client ID în application.properties pentru a activa. Demo: folosește conturile de test (ex: andrei@ecosync.ro / demo123)')
   }
 
   const loginFields = [
@@ -96,7 +96,7 @@ export default function AuthPage() {
       label: 'Email',
       required: true,
       type: 'email',
-      placeholder: 'ex: gigel@ecosync.ro',
+      placeholder: 'ex: andrei@ecosync.ro',
       onChange: handleChange('email'),
     },
     {
@@ -147,8 +147,8 @@ export default function AuthPage() {
         {/* Demo hint */}
         <div className="mt-8 text-center">
           <p className="text-xs text-slate-600">
-            Conturi demo: <span className="text-slate-500">gigel@ecosync.ro</span> /{' '}
-            <span className="text-slate-500">ana@ecosync.ro</span> · parolă: <span className="text-slate-500">demo123</span>
+            Conturi demo: <span className="text-slate-500">andrei@ecosync.ro</span> /{' '}
+            <span className="text-slate-500">elena@ecosync.ro</span> · parolă: <span className="text-slate-500">demo123</span>
           </p>
         </div>
       </div>

@@ -26,12 +26,12 @@ public class AuthService {
         if (userRepository.count() > 0) return;
 
         userRepository.saveAll(List.of(
-            new User("Gigel Popescu",    "gigel@ecosync.ro",  "demo123", "Bucharest", List.of("Padel", "Tennis")),
-            new User("Ana Ionescu",      "ana@ecosync.ro",    "demo123", "Bucharest", List.of("Ping Pong", "Badminton")),
-            new User("Radu Mihalcea",    "radu@ecosync.ro",   "demo123", "Cluj",      List.of("Padel", "Football")),
-            new User("Maria Constantin", "maria@ecosync.ro",  "demo123", "Bucharest", List.of("Ping Pong", "Yoga")),
-            new User("Bogdan Dumitrescu","bogdan@ecosync.ro", "demo123", "Iași",      List.of("Tennis", "Cycling")),
-            new User("Elena Stancu",     "elena@ecosync.ro",  "demo123", "Bucharest", List.of("Badminton", "Padel"))
+            new User("Andrei Popescu",   "andrei@ecosync.ro",  "demo123", "Bucharest", List.of("Padel", "Tennis")),
+            new User("Ioana Ionescu",    "ioana@ecosync.ro",   "demo123", "Bucharest", List.of("Ping Pong", "Badminton")),
+            new User("Alex Mihalcea",    "alex@ecosync.ro",    "demo123", "Cluj",      List.of("Padel", "Football")),
+            new User("Sofia Constantin", "sofia@ecosync.ro",   "demo123", "Bucharest", List.of("Ping Pong", "Yoga")),
+            new User("Vlad Dumitrescu",  "vlad@ecosync.ro",    "demo123", "Iași",      List.of("Tennis", "Cycling")),
+            new User("Elena Stancu",     "elena@ecosync.ro",   "demo123", "Bucharest", List.of("Badminton", "Padel"))
         ));
     }
 
