@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { SkipForward } from 'lucide-react'
 import { useShaderBackground } from '../components/ui/AnimatedShaderHero'
 import { useCalendar } from '../context/CalendarContext'
+import { useAuth } from '../context/AuthContext'
 
 const BREAK_DURATION = 3 * 60
 const SVG_SIZE = 260
@@ -14,7 +15,9 @@ export default function PausePage() {
   const location = useLocation()
   const canvasRef = useShaderBackground()
   const { recordBreak } = useCalendar()
+  const { recordBreakInContext } = useAuth()
   const timerRef = useRef(null)
+  const recordedRef = useRef(false)
 
   const suggestionText = location.state?.suggestionText ?? 'Depărtează-te de ecran. Respiră adânc și relaxează-te.'
 
@@ -33,7 +36,14 @@ export default function PausePage() {
 
   const skip = () => { clearInterval(timerRef.current); setPhase('feedback') }
 
-  const finishHappy = () => { recordBreak(); setPhase('done') }
+  const finishHappy = () => {
+    if (!recordedRef.current) {
+      recordedRef.current = true
+      recordBreak()            // CalendarContext mood score update
+      recordBreakInContext()   // Backend DB + streak update
+    }
+    setPhase('done')
+  }
 
   const formatTime = s =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
@@ -124,7 +134,7 @@ export default function PausePage() {
             <span className="text-8xl">🎉</span>
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Excelent!</h1>
-              <p className="text-slate-400 text-sm">Scorul tău de wellbeing a crescut. Continuă tot așa!</p>
+              <p className="text-slate-400 text-sm">Streak-ul și scorul tău de wellbeing au crescut. Continuă tot așa!</p>
             </div>
             <button onClick={() => navigate('/dashboard')}
               className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-indigo-500 text-white rounded-2xl font-semibold transition-all hover:scale-105 shadow-lg shadow-indigo-500/30">

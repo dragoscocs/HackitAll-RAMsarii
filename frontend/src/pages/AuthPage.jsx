@@ -99,7 +99,7 @@ export default function AuthPage() {
   }
 
   const handleGoogleLogin = () => {
-    alert('Google OAuth: adaugă Google Client ID în application.properties pentru a activa. Demo: folosește conturile de test (ex: andrei@ecosync.ro / demo123)')
+    alert('Google OAuth: adaugă Google Client ID în application.properties pentru a activa. Demo: folosește conturile de test (ex: andrei@syncfit.ro / demo123)')
   }
 
   const loginFields = [
@@ -107,7 +107,7 @@ export default function AuthPage() {
       label: 'Email',
       required: true,
       type: 'email',
-      placeholder: 'ex: andrei@ecosync.ro',
+      placeholder: 'ex: andrei@syncfit.ro',
       onChange: handleChange('email'),
     },
     {
@@ -132,7 +132,7 @@ export default function AuthPage() {
         {mode === 'login' ? (
           <AnimatedForm
             header="Bine ai revenit"
-            subHeader="Intră în contul tău EcoSync"
+            subHeader="Intră în contul tău SyncFit"
             fields={loginFields}
             submitButton="Sign in"
             textVariantButton="Nu ai cont? Înregistrează-te"
@@ -158,8 +158,8 @@ export default function AuthPage() {
         {/* Demo hint */}
         <div className="mt-8 text-center">
           <p className="text-xs text-slate-600">
-            Conturi demo: <span className="text-slate-500">andrei@ecosync.ro</span> /{' '}
-            <span className="text-slate-500">elena@ecosync.ro</span> · parolă: <span className="text-slate-500">demo123</span>
+            Conturi demo: <span className="text-slate-500">andrei@syncfit.ro</span> /{' '}
+            <span className="text-slate-500">elena@syncfit.ro</span> · parolă: <span className="text-slate-500">demo123</span>
           </p>
         </div>
       </div>
@@ -174,7 +174,7 @@ function RegisterForm({ formData, handleChange, toggleSport, handleRegister, err
         <h2 className="font-bold text-3xl text-white">Cont nou</h2>
       </BoxReveal>
       <BoxReveal boxColor="#6366f1" duration={0.3} className="pb-1">
-        <p className="text-slate-400 text-sm">Alătură-te ecosistemului EcoSync</p>
+        <p className="text-slate-400 text-sm">Alătură-te ecosistemului SyncFit</p>
       </BoxReveal>
 
       {/* Google */}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, X, CalendarDays } from 'lucide-react'
+import { LogOut, X, CalendarDays, Home, Building2 } from 'lucide-react'
 import SmartBreak from './SmartBreak'
 import MatchmakingFeed, { SPORT_ICONS, SPORTS_LIST } from './MatchmakingFeed'
 import FloatingAiAssistant from './FloatingAiAssistant'
@@ -16,9 +16,6 @@ const TICKER_ITEMS = [
   '🚴 Sofia caută colegi de drumuri spre birou',
   '🏸 Elena caută parteneri de Badminton diseară',
 ]
-
-const HERO_STREAK  = 7
-const HERO_MATCHES = 14
 
 function useCountUp(target, duration = 1200) {
   const [value, setValue] = useState(0)
@@ -50,7 +47,7 @@ function toDateString(date) {
   return date.toISOString().split('T')[0]
 }
 
-function ActivityModal({ userId, userName, onClose }) {
+function ActivityModal({ userId, userName, onClose, onMatchRecorded }) {
   const today   = toDateString(new Date())
   const maxDate = toDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
 
@@ -68,6 +65,8 @@ function ActivityModal({ userId, userName, onClose }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activity: sport, date, userName }),
       })
+      // Posting an activity = initiating a match → record it
+      onMatchRecorded?.()
     } catch {}
     setSubmitting(false)
     setDone(true)
@@ -85,10 +84,8 @@ function ActivityModal({ userId, userName, onClose }) {
             <h2 className="text-base font-semibold text-white">Adaugă o activitate</h2>
             <p className="text-xs text-slate-500 mt-0.5">Invită colegi compatibili să se alăture</p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-surface-border flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-          >
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-lg hover:bg-surface-border flex items-center justify-center text-slate-400 hover:text-white transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -103,11 +100,8 @@ function ActivityModal({ userId, userName, onClose }) {
           <div className="px-6 py-5 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Sport</label>
-              <select
-                value={sport}
-                onChange={e => setSport(e.target.value)}
-                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors"
-              >
+              <select value={sport} onChange={e => setSport(e.target.value)}
+                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors">
                 <option value="">Alege sportul…</option>
                 {SPORTS_LIST.map(s => (
                   <option key={s} value={s}>{SPORT_ICONS[s] || '🏅'} {s}</option>
@@ -117,22 +111,14 @@ function ActivityModal({ userId, userName, onClose }) {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Data</label>
-              <input
-                type="date"
-                value={date}
-                min={today}
-                max={maxDate}
+              <input type="date" value={date} min={today} max={maxDate}
                 onChange={e => setDate(e.target.value)}
-                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors [color-scheme:dark]"
-              />
+                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors [color-scheme:dark]" />
               <p className="text-[11px] text-slate-600">Poți selecta o dată în intervalul următoarelor 30 de zile.</p>
             </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={!sport || !date || submitting}
-              className="mt-1 w-full py-3 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand/25 flex items-center justify-center gap-2"
-            >
+            <button onClick={handleSubmit} disabled={!sport || !date || submitting}
+              className="mt-1 w-full py-3 rounded-xl bg-brand hover:bg-brand-dark text-white font-semibold text-sm transition-all duration-200 hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand/25 flex items-center justify-center gap-2">
               {submitting
                 ? <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Se trimite…</>
                 : 'Postează activitatea →'}
@@ -145,7 +131,7 @@ function ActivityModal({ userId, userName, onClose }) {
 }
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout, recordMatchInContext } = useAuth()
   const { moodScore, moodLabel } = useCalendar()
   const navigate = useNavigate()
 
@@ -169,9 +155,28 @@ export default function Dashboard() {
 
   const handleLogout = () => { logout(); navigate('/login') }
 
-  const firstName        = user?.name?.split(' ')[0] ?? 'Coleg'
-  const preferredSports  = user?.preferredSports ?? []
-  const primarySport     = preferredSports[0] ?? 'Padel'
+  const firstName       = user?.name?.split(' ')[0] ?? 'Coleg'
+  const preferredSports = user?.preferredSports ?? []
+  const primarySport    = preferredSports[0] ?? 'Padel'
+
+  // Real stats from backend (persisted in DB per user)
+  const breaksTakenToday = user?.breaksTakenToday  ?? 0
+  const currentStreak    = user?.currentStreak     ?? 0
+  const matchesThisMonth = user?.matchesThisMonth  ?? 0
+  const workLocation     = user?.workLocation      ?? null
+
+  // Mood score: 40 base + matches contribution + breaks contribution + streak contribution
+  const realMoodScore = Math.min(100, Math.round(
+    40
+    + Math.min(matchesThisMonth * 3, 24)
+    + Math.min(breaksTakenToday * 8, 24)
+    + Math.min(currentStreak * 1.5, 12)
+  ))
+  const displayMoodScore = realMoodScore > 40 ? realMoodScore : moodScore
+  const displayMoodLabel = realMoodScore >= 80 ? { text: 'Excelent 🌟' }
+    : realMoodScore >= 65 ? { text: 'Bine 😊' }
+    : realMoodScore >= 50 ? { text: 'Moderat 😐' }
+    : { text: moodLabel.text }
 
   const handleFindPartners = () => {
     setSearchTrigger(prev => ({ sport: primarySport, key: prev.key + 1 }))
@@ -179,8 +184,14 @@ export default function Dashboard() {
   }
 
   const heroSubtitle = preferredSports.length > 0
-    ? `Streak activ: ${HERO_STREAK} zile · Sporturi: ${preferredSports.slice(0, 3).join(', ')} · ${HERO_MATCHES} matches luna aceasta`
-    : `Streak activ: ${HERO_STREAK} zile · ${HERO_MATCHES} matches luna aceasta · ${getGreeting()}, ${firstName}!`
+    ? `Streak: ${currentStreak} zile · Sporturi: ${preferredSports.slice(0, 3).join(', ')} · ${matchesThisMonth} matches luna aceasta`
+    : `Streak: ${currentStreak} zile · ${matchesThisMonth} matches · ${getGreeting()}, ${firstName}!`
+
+  const workLocationBadge = workLocation === 'HOME'
+    ? { icon: Home, label: 'Acasă', cls: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' }
+    : workLocation === 'OFFICE'
+    ? { icon: Building2, label: 'La birou', cls: 'text-sky-400 border-sky-500/30 bg-sky-500/10' }
+    : null
 
   return (
     <div className="min-h-screen relative">
@@ -202,18 +213,23 @@ export default function Dashboard() {
 
         <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-brand-light flex items-center justify-center shadow-lg shadow-brand/30">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img src="/logo.png?v=2" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white tracking-tight">EcoSync</h1>
+              <h1 className="text-base font-bold text-white tracking-tight">SyncFit</h1>
               <p className="text-[10px] text-slate-500 leading-none">AI Wellbeing Platform</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
+            {workLocationBadge && (
+              <div className={`hidden sm:flex items-center gap-1.5 text-xs border rounded-xl px-3 py-1.5 ${workLocationBadge.cls}`}>
+                <workLocationBadge.icon className="w-3 h-3" />
+                {workLocationBadge.label}
+              </div>
+            )}
+
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -243,25 +259,41 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <AnimatedShaderHero
           trustBadge={{ text: 'Pauza ta inteligentă durează 3 minute. Relaxează-te!' }}
-          headline={{ line1: 'EcoSync', line2: 'Wellbeing & Sport' }}
+          headline={{ line1: 'SyncFit', line2: 'Wellbeing & Sport' }}
           subtitle={heroSubtitle}
           buttons={{
-            primary:   { text: 'Adaugă o activitate',             onClick: () => setShowModal(true) },
+            primary:   { text: 'Adaugă o activitate',                onClick: () => setShowModal(true) },
             secondary: { text: 'Găsește Partener (Sporturile tale)', onClick: handleFindPartners },
           }}
           className="animate-fade-in"
         />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AnimatedStatCard icon="🏃" label="Streak"     target={HERO_STREAK} unit=" zile" sub="+2 săptămâna asta"     color="emerald" delay={0}   />
-          <AnimatedStatCard icon="😊" label="Mood Score" target={moodScore}   unit="/100" sub={moodLabel.text} color="violet"  delay={100} link="/program" onLink={() => navigate('/program')} />
-          <AnimatedStatCard icon="🤝" label="Matches"    target={HERO_MATCHES} unit=""    sub="Luna aceasta"           color="sky"     delay={200} />
-          <AnimatedStatCard icon="☕" label="Pauze"      target={3}            unit=""    sub="Recomandat: 5"          color="amber"   delay={300} />
+          <AnimatedStatCard
+            icon="🔥" label="Streak" target={currentStreak} unit=" zile"
+            sub={currentStreak > 0 ? `${currentStreak} zile consecutive ✨` : 'Ia prima pauză azi!'}
+            color="emerald" delay={0}
+          />
+          <AnimatedStatCard
+            icon="😊" label="Mood Score" target={displayMoodScore} unit="/100"
+            sub={displayMoodLabel.text}
+            color="violet" delay={100} onLink={() => navigate('/program')}
+          />
+          <AnimatedStatCard
+            icon="🤝" label="Matches" target={matchesThisMonth} unit=""
+            sub="Activități luna aceasta"
+            color="sky" delay={200}
+          />
+          <AnimatedStatCard
+            icon="☕" label="Pauze azi" target={breaksTakenToday} unit=""
+            sub={breaksTakenToday >= 5 ? '🎉 Obiectiv atins!' : `Obiectiv: 5 · mai ${Math.max(0, 5 - breaksTakenToday)} rămase`}
+            color="amber" delay={300}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-2 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            <SmartBreak userId={user?.userId ?? 1} />
+            <SmartBreak userId={user?.userId ?? 1} workLocation={workLocation} />
           </div>
           <div ref={matchmakingRef} className="lg:col-span-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
             <MatchmakingFeed
@@ -280,6 +312,7 @@ export default function Dashboard() {
           userId={user?.userId ?? 1}
           userName={user?.name}
           onClose={() => setShowModal(false)}
+          onMatchRecorded={recordMatchInContext}
         />
       )}
     </div>

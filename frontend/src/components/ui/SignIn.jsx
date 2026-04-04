@@ -224,12 +224,10 @@ export const EcoOrbitDisplay = memo(function EcoOrbitDisplay() {
 
       {/* Center logo */}
       <div className="relative z-10 flex flex-col items-center gap-2">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand to-brand-light flex items-center justify-center shadow-2xl shadow-brand/40">
-          <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+        <div className="w-32 h-32 flex items-center justify-center mb-[-0.5rem]">
+          <img src="/logo.png?v=2" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-2xl" />
         </div>
-        <span className="text-2xl font-bold text-white tracking-tight">EcoSync</span>
+        <span className="text-2xl font-bold text-white tracking-tight">SyncFit</span>
         <span className="text-xs text-slate-400 text-center max-w-[160px]">
           Wellbeing & Active Matchmaking
         </span>
