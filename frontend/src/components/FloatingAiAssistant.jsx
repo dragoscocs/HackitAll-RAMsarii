@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Loader2, Send } from 'lucide-react';
+import { Bot, X, Loader2, Send, Paperclip } from 'lucide-react';
 
 const FloatingAiAssistant = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -8,25 +8,47 @@ const FloatingAiAssistant = () => {
     { role: 'ai', content: 'Salut! Sunt asistentul tău EcoSync. Te pot ajuta cu sfaturi de wellbeing, nutriție sau echipament sportiv. Cu ce începem?' }
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory, isTyping]);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      // Store only the raw base64 data, stripping the data URL prefix
+      const base64 = reader.result.split(',')[1];
+      setSelectedImage(base64);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleSend = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() && !selectedImage) return;
 
     const userMsg = message;
-    setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+    const imageToSend = selectedImage;
+
+    setChatHistory(prev => [...prev, { role: 'user', content: userMsg || '📷 Imagine atașată' }]);
     setMessage('');
+    setSelectedImage(null);
     setIsTyping(true);
 
     try {
+      const contextToSend = [...chatHistory, { role: 'user', content: userMsg }]
+        .filter(msg => msg.role !== 'ai' || !msg.content.startsWith('Salut! Sunt asistentul'))
+        .slice(-4);
+
       const response = await fetch('http://localhost:8080/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userMsg })
+        body: JSON.stringify({ history: contextToSend, imageBase64: imageToSend })
       });
 
       if (!response.ok) throw new Error('Network error');
@@ -86,7 +108,35 @@ const FloatingAiAssistant = () => {
           </div>
 
           <div className="p-4 bg-zinc-800 border-t border-zinc-700">
+            {selectedImage && (
+              <div className="relative inline-block mb-2">
+                <img
+                  src={`data:image/jpeg;base64,${selectedImage}`}
+                  alt="Preview"
+                  className="h-16 w-16 rounded-lg object-cover border border-zinc-600"
+                />
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-400 transition-colors"
+                >
+                  <X className="w-2.5 h-2.5 text-white" />
+                </button>
+              </div>
+            )}
             <div className="flex gap-2 items-end">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-3 bg-zinc-700 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-600 transition-colors flex-shrink-0"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -95,7 +145,7 @@ const FloatingAiAssistant = () => {
                 className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-indigo-500"
                 placeholder="Întreabă ceva..."
               />
-              <button onClick={handleSend} disabled={!message.trim() || isTyping} className="p-3 bg-indigo-600 rounded-xl text-white hover:bg-indigo-500 disabled:opacity-50">
+              <button onClick={handleSend} disabled={(!message.trim() && !selectedImage) || isTyping} className="p-3 bg-indigo-600 rounded-xl text-white hover:bg-indigo-500 disabled:opacity-50 flex-shrink-0">
                 <Send className="w-5 h-5" />
               </button>
             </div>

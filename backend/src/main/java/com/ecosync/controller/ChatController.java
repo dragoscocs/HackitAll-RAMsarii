@@ -3,11 +3,14 @@ package com.ecosync.controller;
 import com.ecosync.service.AiService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @CrossOrigin(origins = "*")
 public class ChatController {
 
-    public record ChatRequest(String prompt) {}
+    public record ChatMessage(String role, String content) {}
+    public record ChatRequest(List<ChatMessage> history, String imageBase64) {}
 
     private final AiService aiService;
 
@@ -17,6 +20,6 @@ public class ChatController {
 
     @PostMapping("/api/chat")
     public String chat(@RequestBody ChatRequest request) {
-        return aiService.getChatReply(request.prompt());
+        return aiService.getChatReply(request);
     }
 }

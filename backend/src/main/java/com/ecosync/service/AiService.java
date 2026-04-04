@@ -1,5 +1,7 @@
 package com.ecosync.service;
 
+import com.ecosync.controller.ChatController.ChatMessage;
+import com.ecosync.controller.ChatController.ChatRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AiService {
@@ -20,20 +24,67 @@ public class AiService {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Map<String, String> responseCache = new ConcurrentHashMap<>();
+
+    private static final String SYSTEM_PROMPT =
+        "SYSTEM: Ești EcoSync, asistent AI corporate. " +
+        "REGULI: " +
+        "1. Răspunde în MAXIM 40 de cuvinte. " +
+        "2. Analizează imaginile încărcate SAU răspunde doar despre sport, nutriție, ergonomie. " +
+        "3. Refuză politicos orice alt subiect. " +
+        "CONTEXT CONVERSAȚIE:";
 
     public AiService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
 
-    public String getChatReply(String userMessage) {
-        String fullPrompt = "Ești EcoSync, un asistent de wellbeing corporate prietenos. Răspunde scurt, la obiect, în maxim 2-3 propoziții la următoarea întrebare: " + userMessage;
+    public String getChatReply(ChatRequest request) {
+        List<ChatMessage> history = request.history();
+        String imageBase64 = request.imageBase64();
+
+        if ((history == null || history.isEmpty()) && (imageBase64 == null || imageBase64.isBlank())) {
+            return "Te ajut doar cu wellbeing și sport.";
+        }
+
+        if (imageBase64 != null && !imageBase64.isBlank()) {
+            String textPrompt = buildConversationContext(history != null ? history : List.of());
+            try {
+                return extractAndCleanJson(callGeminiMultimodal(textPrompt, imageBase64));
+            } catch (Exception e) {
+                System.err.println("[ChatError-Multimodal] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                return "Ne pare rău, nu pot analiza imaginea acum. Încearcă din nou!";
+            }
+        }
+
+        String lastUserMessage = history.stream()
+            .filter(m -> "user".equals(m.role()))
+            .reduce((first, second) -> second)
+            .map(ChatMessage::content)
+            .orElse("");
+
+        String cacheKey = lastUserMessage.toLowerCase().trim();
+
+        if (responseCache.containsKey(cacheKey)) {
+            return responseCache.get(cacheKey);
+        }
+
         try {
-            String rawResponse = callGeminiApi(fullPrompt);
-            return extractAndCleanJson(rawResponse);
+            String rawResponse = callGeminiApi(buildConversationContext(history));
+            String reply = extractAndCleanJson(rawResponse);
+            responseCache.put(cacheKey, reply);
+            return reply;
         } catch (Exception e) {
             System.err.println("[ChatError] " + e.getClass().getSimpleName() + ": " + e.getMessage());
             return "Ne pare rău, nu pot răspunde acum. Încearcă din nou!";
         }
+    }
+
+    private String buildConversationContext(List<ChatMessage> history) {
+        StringBuilder context = new StringBuilder(SYSTEM_PROMPT).append("\n");
+        for (ChatMessage msg : history) {
+            context.append(msg.role().toUpperCase()).append(": ").append(msg.content()).append("\n");
+        }
+        return context.toString();
     }
 
     public String getAiRecommendation(String prompt) {
@@ -76,6 +127,33 @@ public class AiService {
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+    }
+
+    /**
+     * Constructs a Gemini multimodal request with both a text prompt and an inline Base64-encoded image.
+     * The `parts` array must contain the text part first, followed by the inlineData part,
+     * as required by the GenerativeLanguage API spec.
+     */
+    private String callGeminiMultimodal(String textPrompt, String imageBase64) {
+        Map<String, Object> textPart = Map.of("text", textPrompt);
+        Map<String, Object> imagePart = Map.of(
+            "inlineData", Map.of(
+                "mimeType", "image/jpeg",
+                "data", imageBase64
+            )
+        );
+        Map<String, Object> requestBody = Map.of(
+            "contents", new Object[]{
+                Map.of("parts", new Object[]{ textPart, imagePart })
+            }
+        );
+        return webClient.post()
+            .uri(geminiApiUrl + "?key=" + geminiApiKey)
+            .header("Content-Type", "application/json")
+            .body(Mono.just(requestBody), Map.class)
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
     }
 
     private String getMockAiResponse(String prompt) {
