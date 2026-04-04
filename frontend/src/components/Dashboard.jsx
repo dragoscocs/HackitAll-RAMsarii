@@ -103,8 +103,11 @@ function SmartBreakBanner({ userId, workLocation }) {
   const [suggestion, setSuggestion]   = useState(null)
   const [snoozedIdx, setSnoozedIdx]   = useState(0)   // skip breaks before this index
 
+  const todayDow  = new Date().getDay()
+  const isWeekend = todayDow === 0 || todayDow === 6
+
   useEffect(() => {
-    if (!userId) return
+    if (!userId || isWeekend) return
     Promise.all([
       fetch(`/api/breaks/${userId}/schedule`).then(r => r.ok ? r.json() : null),
       fetch(`/api/breaks/${userId}`).then(r => r.ok ? r.json() : null),
@@ -112,7 +115,26 @@ function SmartBreakBanner({ userId, workLocation }) {
       if (sched) setSchedule(sched)
       if (sugg) setSuggestion(sugg)
     }).catch(() => {})
-  }, [userId])
+  }, [userId, isWeekend])
+
+  // Weekend — show a rest card instead of nothing
+  if (isWeekend) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4 flex items-center gap-4 animate-fade-in">
+        <span className="text-2xl shrink-0">🌴</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-emerald-300">Weekend — odihnă bine meritată!</p>
+          <p className="text-xs text-slate-500 mt-0.5">Pauzele tale AI revin luni. Bucură-te de timp liber!</p>
+        </div>
+        <button
+          onClick={() => navigate('/program')}
+          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-medium transition-all shrink-0"
+        >
+          📅 Program
+        </button>
+      </div>
+    )
+  }
 
   if (!schedule) return null
 

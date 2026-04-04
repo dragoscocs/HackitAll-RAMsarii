@@ -2,14 +2,14 @@ import { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { generateCalendarForUser } from '../data/calendarData'
 
 export const MEETING_TYPES_MAP = {
-  standup:      { label: 'Standup',    color: '#34d399', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-300' },
-  planning:     { label: 'Planning',   color: '#818cf8', bg: 'bg-indigo-500/15',  border: 'border-indigo-500/30',  text: 'text-indigo-300'  },
-  'one-on-one': { label: '1:1',        color: '#a78bfa', bg: 'bg-violet-500/15',  border: 'border-violet-500/30',  text: 'text-violet-300'  },
-  team:         { label: 'Team Sync',  color: '#38bdf8', bg: 'bg-sky-500/15',     border: 'border-sky-500/30',     text: 'text-sky-300'     },
-  review:       { label: 'Review',     color: '#fb923c', bg: 'bg-orange-500/15',  border: 'border-orange-500/30',  text: 'text-orange-300'  },
-  'all-hands':  { label: 'All Hands',  color: '#f472b6', bg: 'bg-pink-500/15',    border: 'border-pink-500/30',    text: 'text-pink-300'    },
-  workshop:     { label: 'Workshop',   color: '#facc15', bg: 'bg-yellow-500/15',  border: 'border-yellow-500/30',  text: 'text-yellow-300'  },
-  demo:         { label: 'Demo',       color: '#4ade80', bg: 'bg-green-500/15',   border: 'border-green-500/30',   text: 'text-green-300'   },
+  standup: { label: 'Standup', color: '#34d399', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-300' },
+  planning: { label: 'Planning', color: '#818cf8', bg: 'bg-indigo-500/15', border: 'border-indigo-500/30', text: 'text-indigo-300' },
+  'one-on-one': { label: '1:1', color: '#a78bfa', bg: 'bg-violet-500/15', border: 'border-violet-500/30', text: 'text-violet-300' },
+  team: { label: 'Team Sync', color: '#38bdf8', bg: 'bg-sky-500/15', border: 'border-sky-500/30', text: 'text-sky-300' },
+  review: { label: 'Review', color: '#fb923c', bg: 'bg-orange-500/15', border: 'border-orange-500/30', text: 'text-orange-300' },
+  'all-hands': { label: 'All Hands', color: '#f472b6', bg: 'bg-pink-500/15', border: 'border-pink-500/30', text: 'text-pink-300' },
+  workshop: { label: 'Workshop', color: '#facc15', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30', text: 'text-yellow-300' },
+  demo: { label: 'Demo', color: '#4ade80', bg: 'bg-green-500/15', border: 'border-green-500/30', text: 'text-green-300' },
 }
 
 function getMondayOfCurrentWeek() {
@@ -57,22 +57,22 @@ function getMoodFactors(todayEvts, breaksToday) {
     if ((new Date(sorted[i].start) - new Date(sorted[i - 1].end)) / 60000 < 10) consecutive++
   }
   const heavy = todayEvts.filter(ev => ['all-hands', 'workshop'].includes(ev.type)).length
-  const late  = todayEvts.filter(ev => new Date(ev.end).getHours() >= 17).length
+  const late = todayEvts.filter(ev => new Date(ev.end).getHours() >= 17).length
 
   return [
-    { label: 'Ședințe azi',      value: `${(totalMin / 60).toFixed(1)}h`,   delta: -Math.min(20, Math.floor(totalMin / 30) * 2), icon: '📅' },
-    { label: 'Înapoi-în-înapoi', value: `${consecutive} pauze`,             delta: -(consecutive * 4),  icon: '⚡' },
-    { label: 'Ședințe grele',    value: `${heavy} sesiuni`,                 delta: -(heavy * 4),        icon: '🏋️' },
-    { label: 'Ședințe târzii',   value: `${late} după 17:00`,               delta: -(late * 4),         icon: '🌙' },
-    { label: 'Pauze luate',      value: `${breaksToday} pauze`,             delta: breaksToday * 6,     icon: '🌿' },
+    { label: 'Ședințe azi', value: `${(totalMin / 60).toFixed(1)}h`, delta: -Math.min(20, Math.floor(totalMin / 30) * 2), icon: '📅' },
+    { label: 'Înapoi-în-înapoi', value: `${consecutive} pauze`, delta: -(consecutive * 4), icon: '⚡' },
+    { label: 'Ședințe grele', value: `${heavy} sesiuni`, delta: -(heavy * 4), icon: '🏋️' },
+    { label: 'Ședințe târzii', value: `${late} după 17:00`, delta: -(late * 4), icon: '🌙' },
+    { label: 'Pauze luate', value: `${breaksToday} pauze`, delta: breaksToday * 6, icon: '🌿' },
   ]
 }
 
 function getMoodLabel(score) {
   if (score >= 80) return { text: 'Excelent', color: 'text-emerald-400' }
-  if (score >= 65) return { text: 'Bine',     color: 'text-sky-400'     }
-  if (score >= 50) return { text: 'Moderat',  color: 'text-amber-400'   }
-  return                   { text: 'Obositor',color: 'text-red-400'     }
+  if (score >= 65) return { text: 'Bine', color: 'text-sky-400' }
+  if (score >= 50) return { text: 'Moderat', color: 'text-amber-400' }
+  return { text: 'Obositor', color: 'text-red-400' }
 }
 
 function getMoodRecommendation(score) {
@@ -85,7 +85,7 @@ function getMoodRecommendation(score) {
 function calcBreakOpportunities(todayEvts) {
   const today = new Date()
   const DAY_START = new Date(today); DAY_START.setHours(9, 0, 0, 0)
-  const DAY_END   = new Date(today); DAY_END.setHours(18, 0, 0, 0)
+  const DAY_END = new Date(today); DAY_END.setHours(18, 0, 0, 0)
 
   const sorted = [...todayEvts]
     .map(ev => ({ start: new Date(ev.start), end: new Date(ev.end) }))
@@ -127,17 +127,17 @@ function calcSmartBreaks(todayEvts, workSchedule) {
   const scheduleStr = workSchedule || '9-17'
   const resultBreaks = []
   const today = new Date()
-  
+
   const [startH, endH] = scheduleStr.split('-').map(Number)
   const workStart = new Date(today); workStart.setHours(startH, 0, 0, 0)
-  const workEnd   = new Date(today); workEnd.setHours(endH, 0, 0, 0)
-  
-  const bufferStart = new Date(workStart.getTime() + 60 * 60 * 1000) 
-  const bufferEnd   = new Date(workEnd.getTime() - 60 * 60 * 1000)   
+  const workEnd = new Date(today); workEnd.setHours(endH, 0, 0, 0)
+
+  const bufferStart = new Date(workStart.getTime() + 60 * 60 * 1000)
+  const bufferEnd = new Date(workEnd.getTime() - 60 * 60 * 1000)
 
   const sortedMeetings = todayEvts
     .filter(m => new Date(m.end) > workStart && new Date(m.start) < workEnd)
-    .sort((a,b) => new Date(a.start) - new Date(b.start))
+    .sort((a, b) => new Date(a.start) - new Date(b.start))
 
   // 1. Identify Fatigue Blocks (Continuous meetings with < 5 min gap)
   const fatigueBlocks = []
@@ -147,7 +147,7 @@ function calcSmartBreaks(todayEvts, workSchedule) {
       const prev = currentBlock[currentBlock.length - 1]
       const curr = sortedMeetings[i]
       const gapMin = (new Date(curr.start) - new Date(prev.end)) / 60000
-      
+
       if (gapMin < 5) currentBlock.push(curr)
       else {
         fatigueBlocks.push([...currentBlock])
@@ -163,13 +163,13 @@ function calcSmartBreaks(todayEvts, workSchedule) {
     const blockEnd = new Date(block[block.length - 1].end)
     const totalDurationMins = (blockEnd - blockStart) / 60000
 
-    if (totalDurationMins >= 90) { 
+    if (totalDurationMins >= 90) {
       const breakTime = new Date(blockEnd.getTime() + 2 * 60 * 1000)
       if (breakTime >= workStart && breakTime <= workEnd) {
-        resultBreaks.push({ 
-          type: 'FATIGUE_RECOVERY', 
-          time: breakTime, 
-          reason: `Recuperare post-efort intensiv (${Math.round(totalDurationMins)} min continue)` 
+        resultBreaks.push({
+          type: 'FATIGUE_RECOVERY',
+          time: breakTime,
+          reason: `Recuperare post-efort intensiv (${Math.round(totalDurationMins)} min continue)`
         })
       }
     }
@@ -202,23 +202,23 @@ function calcSmartBreaks(todayEvts, workSchedule) {
   // Distribute neededRegularBreaks over freeSlots
   // A simple linear pass logic using 45 minute steps inside valid free slots
   for (let slot of freeSlots) {
-      let slotCursor = new Date(slot.start.getTime() + 5 * 60000); // Start 5 mins into the free slot
-      while (slotCursor < new Date(slot.end.getTime() - 5 * 60000) && neededRegularBreaks > 0) {
-          if (isValidGap(slotCursor)) {
-              resultBreaks.push({
-                  type: 'REGULAR',
-                  time: new Date(slotCursor),
-                  reason: 'Pauză de distribuție activă'
-              })
-              neededRegularBreaks--;
-              slotCursor = new Date(slotCursor.getTime() + 45 * 60000); // Jump forward 45 minutes
-          } else {
-              slotCursor = new Date(slotCursor.getTime() + 5 * 60000); // Increment slowly to find a valid spot
-          }
+    let slotCursor = new Date(slot.start.getTime() + 5 * 60000); // Start 5 mins into the free slot
+    while (slotCursor < new Date(slot.end.getTime() - 5 * 60000) && neededRegularBreaks > 0) {
+      if (isValidGap(slotCursor)) {
+        resultBreaks.push({
+          type: 'REGULAR',
+          time: new Date(slotCursor),
+          reason: 'Pauză de distribuție activă'
+        })
+        neededRegularBreaks--;
+        slotCursor = new Date(slotCursor.getTime() + 45 * 60000); // Jump forward 45 minutes
+      } else {
+        slotCursor = new Date(slotCursor.getTime() + 5 * 60000); // Increment slowly to find a valid spot
       }
+    }
   }
 
-  return resultBreaks.sort((a,b) => a.time - b.time)
+  return resultBreaks.sort((a, b) => a.time - b.time)
 }
 
 const CalendarContext = createContext(null)
@@ -268,18 +268,18 @@ export function CalendarProvider({ children }) {
   }, [events])
 
   const breakOpportunities = useMemo(() => calcBreakOpportunities(todayEvents), [todayEvents])
-  const smartBreaks        = useMemo(() => {
+  const smartBreaks = useMemo(() => {
     const user = JSON.parse(localStorage.getItem('syncfit_user') || '{}')
     return calcSmartBreaks(todayEvents, user.workSchedule)
   }, [todayEvents])
 
-  const moodScore   = useMemo(() => calcMoodScore(todayEvents, breaksToday), [todayEvents, breaksToday])
+  const moodScore = useMemo(() => calcMoodScore(todayEvents, breaksToday), [todayEvents, breaksToday])
   const moodFactors = useMemo(() => getMoodFactors(todayEvents, breaksToday), [todayEvents, breaksToday])
-  const moodLabel   = useMemo(() => getMoodLabel(moodScore), [moodScore])
-  const moodReco    = useMemo(() => getMoodRecommendation(moodScore), [moodScore])
+  const moodLabel = useMemo(() => getMoodLabel(moodScore), [moodScore])
+  const moodReco = useMemo(() => getMoodRecommendation(moodScore), [moodScore])
 
   // ── Mood override (set after break slider) ──────────────────────────────
-  const [moodOverride, setMoodOverride]             = useState(null) // 0-100 | null
+  const [moodOverride, setMoodOverride] = useState(null) // 0-100 | null
   const [pendingAiIntervention, setPendingAiIntervention] = useState(null) // { score, userName, sliderValue } | null
 
   // ── Morning mood (persisted per day via localStorage + custom event) ────
@@ -287,7 +287,7 @@ export function CalendarProvider({ children }) {
     try {
       const s = JSON.parse(localStorage.getItem('syncfit_morning_mood') || 'null')
       if (s?.date === new Date().toDateString()) return s.value // 1–5
-    } catch {}
+    } catch { }
     return null
   })
 
@@ -309,7 +309,7 @@ export function CalendarProvider({ children }) {
   const clearAiIntervention = () => setPendingAiIntervention(null)
 
   const connectMicrosoft = () => setConnected(true)
-  const recordBreak      = () => setBreaksToday(p => p + 1)
+  const recordBreak = () => setBreaksToday(p => p + 1)
 
   return (
     <CalendarContext.Provider value={{
