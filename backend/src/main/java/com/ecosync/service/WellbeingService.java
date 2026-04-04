@@ -53,7 +53,26 @@ public class WellbeingService {
         );
 
         String suggestionText = aiService.getAiRecommendation(prompt);
+
+        // If AI returned JSON (matchmaking fallback) or empty, use a sensible default
+        if (suggestionText == null || suggestionText.isBlank() || suggestionText.trim().startsWith("{")) {
+            suggestionText = getDefaultSuggestion(workLocation, breakTime);
+        }
+
         return new BreakSuggestion(breakTime, suggestionText, true);
+    }
+
+    private String getDefaultSuggestion(String workLocation, String breakTime) {
+        if ("HOME".equals(workLocation)) {
+            return "Ridică-te de la birou, ieși pe balcon câteva minute și respiră aer proaspăt. " +
+                   "Câteva întinderi ușoare îți vor relaxa spatele și umerii. Meriti această pauză! 🌿";
+        } else if ("OFFICE".equals(workLocation)) {
+            return "Fă o scurtă plimbare până la terasă sau la fereastră. Privește în zare, " +
+                   "bea un pahar cu apă și schimbă câteva vorbe cu un coleg. Reîncarcă-te! ☕";
+        } else {
+            return "Depărtează-te de ecran câteva minute. Respiră adânc de 5 ori, " +
+                   "întinde-te ușor și hidratează-te. Corpul tău îți mulțumește! 🧘";
+        }
     }
 
     public void recordBreak(Long userId) {
