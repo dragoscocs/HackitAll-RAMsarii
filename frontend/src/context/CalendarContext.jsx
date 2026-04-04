@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo } from 'react'
+import { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { generateCalendarForUser } from '../data/calendarData'
 
 export const MEETING_TYPES_MAP = {
@@ -176,6 +176,36 @@ export function CalendarProvider({ children }) {
   const moodLabel   = useMemo(() => getMoodLabel(moodScore), [moodScore])
   const moodReco    = useMemo(() => getMoodRecommendation(moodScore), [moodScore])
 
+  // ── Mood override (set after break slider) ──────────────────────────────
+  const [moodOverride, setMoodOverride]             = useState(null) // 0-100 | null
+  const [pendingAiIntervention, setPendingAiIntervention] = useState(null) // { score, userName, sliderValue } | null
+
+  // ── Morning mood (persisted per day via localStorage + custom event) ────
+  const [morningMood, setMorningMoodState] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('syncfit_morning_mood') || 'null')
+      if (s?.date === new Date().toDateString()) return s.value // 1–5
+    } catch {}
+    return null
+  })
+
+  useEffect(() => {
+    const handler = (e) => setMorningMoodState(e.detail.value)
+    window.addEventListener('syncfit:morning-mood', handler)
+    return () => window.removeEventListener('syncfit:morning-mood', handler)
+  }, [])
+
+  // Called from PausePage after user submits the -5..+5 slider
+  const setMoodFromSlider = (sliderValue, userName) => {
+    const score = Math.max(20, Math.min(100, 60 + sliderValue * 8))
+    setMoodOverride(score)
+    if (sliderValue <= -2) {
+      setPendingAiIntervention({ score, userName: userName ?? 'Coleg', sliderValue })
+    }
+  }
+
+  const clearAiIntervention = () => setPendingAiIntervention(null)
+
   const connectMicrosoft = () => setConnected(true)
   const recordBreak      = () => setBreaksToday(p => p + 1)
 
@@ -187,6 +217,9 @@ export function CalendarProvider({ children }) {
       selectedWeekOffset, nextWeek, prevWeek,
       weekStart, weekDays,
       todayEvents, breakOpportunities,
+      moodOverride, setMoodFromSlider,
+      morningMood,
+      pendingAiIntervention, clearAiIntervention,
     }}>
       {children}
     </CalendarContext.Provider>

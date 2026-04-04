@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { SkipForward } from 'lucide-react'
 import { useShaderBackground } from '../components/ui/AnimatedShaderHero'
 import { useCalendar } from '../context/CalendarContext'
 import { useAuth } from '../context/AuthContext'
@@ -10,19 +9,122 @@ const SVG_SIZE = 260
 const RADIUS = 110
 const CIRC = 2 * Math.PI * RADIUS
 
+/* ── Mood Slider ─────────────────────────────────────────────────── */
+function MoodSlider({ onSubmit }) {
+  const [value, setValue] = useState(0)
+
+  const getEmoji = () => {
+    if (value <= -4) return '😩'
+    if (value <= -2) return '😕'
+    if (value === 0) return '😐'
+    if (value >= 4)  return '😄'
+    return '🙂'
+  }
+  const getColor = () => {
+    if (value <= -3) return '#ef4444'
+    if (value <= -1) return '#f97316'
+    if (value === 0) return '#94a3b8'
+    if (value >= 3)  return '#34d399'
+    return '#4ade80'
+  }
+  const getLabel = () => {
+    if (value === 0) return 'Neutru'
+    if (value > 0)   return `+${value} — mai bine`
+    return `${value} — mai rău`
+  }
+
+  const pct = ((value + 5) / 10) * 100
+
+  return (
+    <div className="flex flex-col items-center gap-7 animate-fade-in text-center w-full max-w-sm px-4">
+      <span className="text-7xl" style={{ transition: 'all 0.2s' }}>{getEmoji()}</span>
+
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">Cum te-ai simțit?</h1>
+        <p className="text-slate-400 text-sm leading-relaxed">
+          Feedback-ul tău personalizează sugestiile viitoare.
+        </p>
+      </div>
+
+      {/* Big score display */}
+      <div style={{ color: getColor(), transition: 'color 0.2s' }}
+        className="text-6xl font-bold tabular-nums">
+        {value > 0 ? `+${value}` : value}
+      </div>
+      <p className="text-sm font-medium -mt-4" style={{ color: getColor(), transition: 'color 0.2s' }}>
+        {getLabel()}
+      </p>
+
+      {/* Slider track */}
+      <div className="w-full flex items-center gap-4">
+        <span className="text-2xl shrink-0">😩</span>
+        <div className="flex-1 relative">
+          <input
+            type="range"
+            min={-5}
+            max={5}
+            step={1}
+            value={value}
+            onChange={e => setValue(Number(e.target.value))}
+            className="w-full h-2 rounded-full appearance-none cursor-pointer outline-none mood-slider"
+            style={{
+              background: `linear-gradient(to right, ${getColor()} 0%, ${getColor()} ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`,
+            }}
+          />
+        </div>
+        <span className="text-2xl shrink-0">😊</span>
+      </div>
+
+      {/* Tick labels */}
+      <div className="flex justify-between w-full px-9 -mt-5 text-[11px] text-slate-600 select-none">
+        {[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(n => (
+          <span key={n} className={n === value ? 'text-slate-300 font-bold' : ''}>
+            {n === 0 ? '0' : n > 0 ? `+${n}` : n}
+          </span>
+        ))}
+      </div>
+
+      <button
+        onClick={() => onSubmit(value)}
+        className="mt-2 px-10 py-3.5 rounded-2xl font-semibold text-white transition-all hover:scale-105 shadow-lg"
+        style={{ background: 'linear-gradient(135deg, #34d399, #6366f1)', boxShadow: '0 8px 32px rgba(99,102,241,0.3)' }}
+      >
+        Trimite feedback →
+      </button>
+
+      <style>{`
+        .mood-slider::-webkit-slider-thumb {
+          appearance: none; width: 22px; height: 22px;
+          border-radius: 50%; background: white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          cursor: pointer; transition: transform 0.1s;
+        }
+        .mood-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        .mood-slider::-moz-range-thumb {
+          width: 22px; height: 22px; border-radius: 50%;
+          background: white; border: none;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4); cursor: pointer;
+        }
+      `}</style>
+    </div>
+  )
+}
+
+/* ── Main Page ────────────────────────────────────────────────────── */
 export default function PausePage() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const canvasRef = useShaderBackground()
-  const { recordBreak } = useCalendar()
-  const { recordBreakInContext } = useAuth()
-  const timerRef = useRef(null)
+  const navigate   = useNavigate()
+  const location   = useLocation()
+  const canvasRef  = useShaderBackground()
+  const { recordBreak }          = useCalendar()
+  const { setMoodFromSlider }    = useCalendar()
+  const { recordBreakInContext, user } = useAuth()
+  const timerRef   = useRef(null)
   const recordedRef = useRef(false)
 
   const suggestionText = location.state?.suggestionText ?? 'Depărtează-te de ecran. Respiră adânc și relaxează-te.'
 
   const [secondsLeft, setSecondsLeft] = useState(BREAK_DURATION)
-  const [phase, setPhase] = useState('countdown')
+  const [phase, setPhase]             = useState('countdown')
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -36,12 +138,14 @@ export default function PausePage() {
 
   const skip = () => { clearInterval(timerRef.current); setPhase('feedback') }
 
-  const finishHappy = () => {
+  const finishWithMood = (sliderValue) => {
     if (!recordedRef.current) {
       recordedRef.current = true
-      recordBreak()            // CalendarContext mood score update
-      recordBreakInContext()   // Backend DB + streak update
+      recordBreak()
+      recordBreakInContext()
     }
+    const firstName = user?.name?.split(' ')[0] ?? 'Coleg'
+    setMoodFromSlider(sliderValue, firstName)
     setPhase('done')
   }
 
@@ -54,13 +158,6 @@ export default function PausePage() {
     <div className="fixed inset-0 z-[300] overflow-hidden bg-black">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover touch-none" />
       <div className="absolute inset-0 bg-black/50" />
-
-      {phase === 'countdown' && (
-        <button onClick={skip}
-          className="absolute top-6 right-6 z-20 flex items-center gap-2 text-xs text-slate-400 hover:text-white border border-white/10 hover:border-white/25 rounded-xl px-4 py-2.5 transition-all backdrop-blur-md bg-white/5 hover:bg-white/10">
-          <SkipForward className="w-3.5 h-3.5" /> Sari peste
-        </button>
-      )}
 
       <div className="relative z-10 flex flex-col items-center justify-center h-full gap-8 px-8">
 
@@ -110,23 +207,7 @@ export default function PausePage() {
         )}
 
         {phase === 'feedback' && (
-          <div className="flex flex-col items-center gap-7 animate-fade-in text-center">
-            <span className="text-7xl">🌟</span>
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Te-ai relaxat?</h1>
-              <p className="text-slate-400 text-sm">Feedback-ul tău îmbunătățește sugestiile AI.</p>
-            </div>
-            <div className="flex gap-4">
-              <button onClick={finishHappy}
-                className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-semibold text-lg transition-all hover:scale-105 shadow-lg shadow-emerald-500/30">
-                😊 Da, mulțumesc!
-              </button>
-              <button onClick={() => navigate('/dashboard')}
-                className="px-8 py-4 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-2xl font-semibold text-lg transition-all hover:scale-105 backdrop-blur-md">
-                😕 Nu prea
-              </button>
-            </div>
-          </div>
+          <MoodSlider onSubmit={finishWithMood} />
         )}
 
         {phase === 'done' && (
@@ -134,7 +215,7 @@ export default function PausePage() {
             <span className="text-8xl">🎉</span>
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Excelent!</h1>
-              <p className="text-slate-400 text-sm">Streak-ul și scorul tău de wellbeing au crescut. Continuă tot așa!</p>
+              <p className="text-slate-400 text-sm">Streak-ul și scorul tău de wellbeing au fost actualizate. Continuă tot așa!</p>
             </div>
             <button onClick={() => navigate('/dashboard')}
               className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-indigo-500 text-white rounded-2xl font-semibold transition-all hover:scale-105 shadow-lg shadow-indigo-500/30">
