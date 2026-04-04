@@ -4,7 +4,21 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(mvn compile:*)",
-      "Bash(\"/c/Users/drago/.m2/wrapper/dists/apache-maven-3.9.11/03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc/bin/mvn\" compile:*)"
+      "Bash(\"/c/Users/drago/.m2/wrapper/dists/apache-maven-3.9.11/03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc/bin/mvn\" compile:*)",
+      "Bash(\"/c/Users/drago/.m2/wrapper/dists/apache-maven-3.9.11/03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc/bin/mvn\" spring-boot:run -q)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(echo \"Frontend PID: $!\")",
+      "Bash(\"/c/Users/drago/.m2/wrapper/dists/apache-maven-3.9.11/03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc/bin/mvn\" spring-boot:run)",
+      "Bash(echo \"Backend restarted, PID: $!\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/chat -H 'Content-Type: application/json' -d '{\"prompt\": \"Ce paleta de padel recomanzi pentru incepatori?\"}')",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"gigel@ecosync.ro\",\"password\":\"demo123\"}')",
+      "Bash(netstat -ano)",
+      "Read(//c/ING Hackaton/**)",
+      "Bash(cmd /c \"taskkill /F /PID 17552\")",
+      "Bash(cmd /c \"taskkill /F /IM java.exe\")",
+      "Bash(powershell -Command \"Stop-Process -Name java -Force -ErrorAction SilentlyContinue; Start-Sleep 3; \\(Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue\\).Count\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"andrei@ecosync.ro\",\"password\":\"demo123\"}')"
     ]
   }
 }
