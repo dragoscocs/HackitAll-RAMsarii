@@ -134,10 +134,10 @@ function MatchesChart({ userId }) {
         </div>
       </div>
 
-      {/* SVG Chart */}
+      {/* SVG Chart — no labels inside */}
       <div className="relative w-full" style={{ height: CHART_H }}>
         <svg
-          viewBox={`-5 -12 ${CHART_W + 10} ${CHART_H + 12}`}
+          viewBox={`-2 -4 ${CHART_W + 4} ${CHART_H + 4}`}
           preserveAspectRatio="none"
           className="absolute inset-0 w-full h-full overflow-visible"
         >
@@ -187,21 +187,19 @@ function MatchesChart({ userId }) {
           )}
 
           {/* Hover zones + dots */}
-          {coords.map((pt, i) => {
-            const dx = CHART_W / (n > 1 ? n - 1 : 1);
-            return (
-              <g key={i}>
-                {/* Invisible wide hover target (gapless) */}
-                <rect
-                  x={pt.x - dx / 2}
-                  y={-10}
-                  width={dx}
-                  height={CHART_H + 10}
-                  fill="transparent"
-                  className="cursor-crosshair"
-                  onMouseEnter={() => setHovered(i)}
-                  onMouseLeave={() => setHovered(null)}
-                />
+          {coords.map((pt, i) => (
+            <g key={i}>
+              {/* Invisible wide hover target */}
+              <rect
+                x={pt.x - CHART_W / (2 * n)}
+                y={0}
+                width={CHART_W / n}
+                height={CHART_H}
+                fill="transparent"
+                className="cursor-crosshair"
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered(null)}
+              />
 
               {/* Vertical guide line at hover — appears exactly at data point x */}
               {hovered === i && (
@@ -227,26 +225,8 @@ function MatchesChart({ userId }) {
                   transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 />
               )}
-
-              {/* Value label right above the dot on hover */}
-              {hovered === i && (
-                <motion.text
-                  x={pt.x}
-                  y={pt.y - 5}
-                  textAnchor="middle"
-                  fontSize="5"
-                  fill="#c4b5fd"
-                  fontWeight="bold"
-                  fontFamily="inherit"
-                  initial={{ opacity: 0, y: 2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  {pt.matches}
-                </motion.text>
-              )}
             </g>
-          )
-        })}
+          ))}
 
           {/* X axis baseline */}
           <line
