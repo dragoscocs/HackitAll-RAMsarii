@@ -64,8 +64,8 @@ export default function LegalFooter() {
           {/* Left — brand */}
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center shadow-lg shadow-brand/20">
-                <span className="text-white text-sm font-bold">S</span>
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img src="/logo.png?v=2" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-md" />
               </div>
               <div>
                 <p className="text-sm font-bold text-white">SyncFit</p>
