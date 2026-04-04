@@ -1,0 +1,7 @@
+Avem un utilizator nou, Gigel, care vrea să joace Padel azi la ora 18:00 în București.
+Baza noastră de date a returnat 3 colegi disponibili la acea oră:
+Andrei - Sporturi preferate: [Ping Pong, Tenis de câmp]
+Maria - Sporturi preferate: [Yoga, Șah]
+Ion - Sporturi preferate: [Squash, Baschet]
+Evaluează compatibilitatea fiecăruia pentru Padel bazat pe abilitățile transferabile.
+Returnează un array JSON cu obiecte care conțin: "nume", "match_score" (1-100) și "mesaj_notificare" (un scurt mesaj prietenos și motivant în care îi explici de ce ar fi bun la Padel)

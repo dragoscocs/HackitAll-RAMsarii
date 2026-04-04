@@ -1,9 +1,36 @@
+import { useNavigate } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
 import SmartBreak from './SmartBreak'
 import MatchmakingFeed from './MatchmakingFeed'
+import { useAuth } from '../context/AuthContext'
 
-const CURRENT_USER_ID = 1
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Bună dimineața'
+  if (h < 18) return 'Bună ziua'
+  return 'Bună seara'
+}
+
+function getInitials(name = '') {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 export default function Dashboard() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  const firstName = user?.name?.split(' ')[0] ?? 'Coleg'
+
   return (
     <div className="min-h-screen">
       {/* Top navigation bar */}
@@ -22,20 +49,31 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow" />
               <span>Live</span>
             </div>
+
+            {/* User badge */}
             <div className="flex items-center gap-2.5 bg-surface border border-surface-border rounded-xl px-3 py-2">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white">
-                GP
+                {getInitials(user?.name)}
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-medium text-white leading-tight">Gigel Popescu</p>
-                <p className="text-xs text-slate-500">Employee #1</p>
+                <p className="text-sm font-medium text-white leading-tight">{user?.name}</p>
+                <p className="text-xs text-slate-500">{user?.city} · {user?.preferredSports?.slice(0, 2).join(', ')}</p>
               </div>
             </div>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              title="Deconectare"
+              className="w-9 h-9 rounded-xl border border-surface-border bg-surface hover:bg-red-500/10 hover:border-red-500/30 flex items-center justify-center text-slate-400 hover:text-red-400 transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -45,31 +83,28 @@ export default function Dashboard() {
         {/* Page title */}
         <div className="mb-8 animate-fade-in">
           <h2 className="text-3xl font-bold text-white mb-1">
-            Good morning, Gigel 👋
+            {getGreeting()}, {firstName} 👋
           </h2>
           <p className="text-slate-400">
-            Here's your wellbeing snapshot for today.
+            Iată snapshot-ul tău de wellbeing pentru astăzi.
           </p>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fade-in">
-          <StatCard icon="🏃" label="Streak" value="7 days" sub="+2 this week" color="emerald" />
-          <StatCard icon="😊" label="Mood Score" value="8.2/10" sub="↑ from yesterday" color="violet" />
-          <StatCard icon="🤝" label="Matches Made" value="14" sub="This month" color="sky" />
-          <StatCard icon="☕" label="Breaks Taken" value="3" sub="Recommended: 5" color="amber" />
+          <StatCard icon="🏃" label="Streak" value="7 zile" sub="+2 săptămâna asta" color="emerald" />
+          <StatCard icon="😊" label="Mood Score" value="8.2/10" sub="↑ față de ieri" color="violet" />
+          <StatCard icon="🤝" label="Matches" value="14" sub="Luna aceasta" color="sky" />
+          <StatCard icon="☕" label="Pauze" value="3" sub="Recomandat: 5" color="amber" />
         </div>
 
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Break widget — narrower */}
           <div className="lg:col-span-2 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            <SmartBreak userId={CURRENT_USER_ID} />
+            <SmartBreak userId={user?.userId ?? 1} />
           </div>
-
-          {/* Matchmaking feed — wider */}
           <div className="lg:col-span-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
-            <MatchmakingFeed userId={CURRENT_USER_ID} />
+            <MatchmakingFeed userId={user?.userId ?? 1} />
           </div>
         </div>
       </main>
