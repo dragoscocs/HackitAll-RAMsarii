@@ -298,8 +298,9 @@ export function CalendarProvider({ children }) {
   }, [])
 
   // Called from PausePage after user submits the -5..+5 slider
+  // 11 steps (-5..+5): step 0 = 0 pts, step 10 = 100 pts → (value+5)/10 * 100
   const setMoodFromSlider = (sliderValue, userName) => {
-    const score = Math.max(20, Math.min(100, 60 + sliderValue * 8))
+    const score = Math.round(((sliderValue + 5) / 10) * 100)
     setMoodOverride(score)
     if (sliderValue <= -2) {
       setPendingAiIntervention({ score, userName: userName ?? 'Coleg', sliderValue })

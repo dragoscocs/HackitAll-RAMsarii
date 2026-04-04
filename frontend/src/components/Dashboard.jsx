@@ -396,11 +396,14 @@ export default function Dashboard() {
     + Math.min(breaksTakenToday * 8, 24)
     + Math.min(currentStreak * 1.5, 12)
   ))
-  const morningAdj       = morningMood !== null ? (morningMood - 3) * 7 : 0
+  // Morning mood (1-5 emojis): divide 100 by 4 intervals → option 2 = 25, option 3 = 50, etc.
+  const morningMoodScore = morningMood !== null ? Math.round((morningMood - 1) / 4 * 100) : null
   const baseMoodScore    = realMoodScore > 40 ? realMoodScore : moodScore
   const displayMoodScore = moodOverride !== null
     ? moodOverride
-    : Math.max(20, Math.min(100, baseMoodScore + morningAdj))
+    : morningMoodScore !== null
+    ? morningMoodScore
+    : Math.min(100, baseMoodScore)
   const displayMoodLabel = displayMoodScore >= 80 ? 'Excelent 🌟'
     : displayMoodScore >= 65 ? 'Bine 😊'
     : displayMoodScore >= 50 ? 'Moderat 😐'
