@@ -100,7 +100,7 @@ function FlipCard({ icon, label, target, unit, sub, color, delay, definition }) 
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
-  const { moodScore, moodLabel } = useCalendar()
+  const { moodScore, moodLabel, moodOverride, morningMood } = useCalendar()
   const navigate = useNavigate()
 
   const handleLogout = () => { logout(); navigate('/login') }
@@ -119,11 +119,16 @@ export default function Dashboard() {
     + Math.min(breaksTakenToday * 8, 24)
     + Math.min(currentStreak * 1.5, 12)
   ))
-  const displayMoodScore = realMoodScore > 40 ? realMoodScore : moodScore
-  const displayMoodLabel = realMoodScore >= 80 ? 'Excelent 🌟'
-    : realMoodScore >= 65 ? 'Bine 😊'
-    : realMoodScore >= 50 ? 'Moderat 😐'
-    : moodLabel.text
+  // Morning mood adjustment: 1→-14, 2→-7, 3→0, 4→+7, 5→+14
+  const morningAdj = morningMood !== null ? (morningMood - 3) * 7 : 0
+  const baseMoodScore = realMoodScore > 40 ? realMoodScore : moodScore
+  const displayMoodScore = moodOverride !== null
+    ? moodOverride
+    : Math.max(20, Math.min(100, baseMoodScore + morningAdj))
+  const displayMoodLabel = displayMoodScore >= 80 ? 'Excelent 🌟'
+    : displayMoodScore >= 65 ? 'Bine 😊'
+    : displayMoodScore >= 50 ? 'Moderat 😐'
+    : 'Obositor 😔'
 
   const workLocationBadge = workLocation === 'HOME'
     ? { icon: Home,      label: 'Acasă',    cls: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' }
