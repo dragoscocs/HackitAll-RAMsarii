@@ -16,10 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final SmartBreakService smartBreakService;
     private final Map<String, Long> sessions = new ConcurrentHashMap<>();
 
-    public AuthService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public AuthService(UserRepository userRepository, SmartBreakService smartBreakService) {
+        this.userRepository   = userRepository;
+        this.smartBreakService = smartBreakService;
     }
 
     @PostConstruct
@@ -34,19 +36,27 @@ public class AuthService {
                 new User("Elena Stancu",     "elena@ecosync.ro",  "demo123", "Bucharest", List.of("Badminton", "Padel"))
             ));
 
-            userRepository.findByEmail("gigel@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("10-18"); userRepository.save(u); });
-            userRepository.findByEmail("ana@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
-            userRepository.findByEmail("radu@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
-            userRepository.findByEmail("maria@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
-            userRepository.findByEmail("bogdan@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
-            userRepository.findByEmail("elena@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
+            userRepository.findByEmail("gigel@ecosync.ro").ifPresent(u -> { applyWorkSchedule(u, "10-18"); userRepository.save(u); });
+            userRepository.findByEmail("ana@ecosync.ro").ifPresent(u   -> { applyWorkSchedule(u, "9-17");  userRepository.save(u); });
+            userRepository.findByEmail("radu@ecosync.ro").ifPresent(u  -> { applyWorkSchedule(u, "9-17");  userRepository.save(u); });
+            userRepository.findByEmail("maria@ecosync.ro").ifPresent(u -> { applyWorkSchedule(u, "9-17");  userRepository.save(u); });
+            userRepository.findByEmail("bogdan@ecosync.ro").ifPresent(u-> { applyWorkSchedule(u, "9-17");  userRepository.save(u); });
+            userRepository.findByEmail("elena@ecosync.ro").ifPresent(u -> { applyWorkSchedule(u, "9-17");  userRepository.save(u); });
         }
 
         if (userRepository.findByEmail("andrei@ecosync.ro").isEmpty()) {
             User andrei = new User("Andrei Dumitrescu", "andrei@ecosync.ro", "demo123", "Bucharest", List.of("Padel", "Football"));
-            andrei.setWorkSchedule("8-16");
+            applyWorkSchedule(andrei, "8-16");
             userRepository.save(andrei);
         }
+    }
+
+    /** Applies workSchedule string and derives workStartHour/workEndHour. */
+    private void applyWorkSchedule(User user, String schedule) {
+        user.setWorkSchedule(schedule);
+        int[] hours = smartBreakService.parseWorkSchedule(schedule);
+        user.setWorkStartHour(hours[0]);
+        user.setWorkEndHour(hours[1]);
     }
 
     public AuthResponse register(String name, String email, String password, String city, List<String> sports, String workSchedule) {
@@ -54,7 +64,7 @@ public class AuthService {
             throw new RuntimeException("Email-ul este deja înregistrat.");
         }
         User user = new User(name, email, password, city, sports);
-        user.setWorkSchedule(workSchedule != null ? workSchedule : "9-17");
+        applyWorkSchedule(user, workSchedule != null ? workSchedule : "9-17");
         user.setLastLoginDate(LocalDate.now());
         // New users always need to set work location
         User saved = userRepository.save(user);

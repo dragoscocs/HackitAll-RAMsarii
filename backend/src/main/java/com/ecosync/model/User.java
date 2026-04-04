@@ -45,6 +45,12 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String userHealthLimits;
 
+    // Parsed working hours (derived from workSchedule, stored for fast algorithm access)
+    @Column(columnDefinition = "integer default 9")
+    private Integer workStartHour = 9;   // e.g. 9 = 09:00
+    @Column(columnDefinition = "integer default 17")
+    private Integer workEndHour = 17;    // e.g. 17 = 17:00
+
     public User() {}
 
     public User(String name, String email, String password, String city, List<String> preferredSports) {
@@ -102,4 +108,10 @@ public class User {
 
     public String getUserHealthLimits() { return userHealthLimits; }
     public void setUserHealthLimits(String userHealthLimits) { this.userHealthLimits = userHealthLimits; }
+
+    public int getWorkStartHour() { return workStartHour != null ? workStartHour : 9; }
+    public void setWorkStartHour(int workStartHour) { this.workStartHour = workStartHour; }
+
+    public int getWorkEndHour() { return workEndHour != null ? workEndHour : 17; }
+    public void setWorkEndHour(int workEndHour) { this.workEndHour = workEndHour; }
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, Wifi, WifiOff, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -401,6 +401,205 @@ function MoodCard({ moodScore, moodFactors, moodLabel, moodReco }) {
   )
 }
 
+// ── Smart Break Timeline ────────────────────────────────────────────────────────────────────────────────
+function SmartBreakTimeline({ userId }) {
+  const [schedule, setSchedule] = useState(null)
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(null)
+
+  useEffect(() => {
+    if (!userId) { setLoading(false); return }
+    fetch(`/api/breaks/${userId}/schedule`)
+      .then(r => { if (!r.ok) throw new Error('Schedule unavailable'); return r.json() })
+      .then(d => setSchedule(d))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  if (loading) return (
+    <div className="card flex flex-col gap-4 animate-pulse border border-white/5 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+      <div className="h-4 w-40 bg-surface-border/50 rounded" />
+      <div className="h-16 bg-surface-border/30 rounded-2xl" />
+      <div className="flex gap-2"><div className="h-3 w-16 bg-surface-border/50 rounded" /><div className="h-3 w-20 bg-surface-border/50 rounded" /></div>
+    </div>
+  )
+
+  if (error || !schedule) return (
+    <div className="card flex flex-col gap-2 border border-red-500/20 bg-red-500/5">
+      <h2 className="text-sm font-semibold text-red-400">Timeline indisponibil</h2>
+      <p className="text-xs text-red-300/70">
+          {error ? 'Sistemul AI întâmpină dificultăți.' : 'Conectează-te la backend pentru a vizualiza orarul inteligent.'}
+      </p>
+    </div>
+  )
+
+  const { workStartHour, workEndHour, scheduledBreakHours, meetings, nextBreakHour } = schedule
+  const totalHours = workEndHour - workStartHour
+
+  const pct = (h) => ((h - workStartHour) / totalHours) * 100
+
+  const now = new Date()
+  const currentH = now.getHours() + now.getMinutes() / 60
+  const currentPct = Math.min(100, Math.max(0, pct(currentH)))
+  const isWorkingNow = currentH >= workStartHour && currentH <= currentH <= workEndHour
+
+  return (
+    <div className="card border border-white/5 bg-gradient-to-br from-surface-card to-surface-card/50 flex flex-col gap-6 relative shadow-2xl">
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 blur-[50px] rounded-full pointer-events-none" />
+
+      {/* Header */}
+      <div className="flex items-start justify-between relative z-10">
+        <div>
+          <h2 className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 flex items-center gap-2">
+            Timeline Inteligent
+            <span className="text-[10px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              AI Powered
+            </span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 font-medium">
+            Program generat pentru fereastra: <strong className="text-slate-300">{String(workStartHour).padStart(2,'0')}:00 – {String(workEndHour).padStart(2,'0')}:00</strong>
+          </p>
+        </div>
+      </div>
+
+      {/* Main Timeline Visual */}
+      <div className="relative mt-2">
+        {/* Core Bar */}
+        <div className="relative h-14 rounded-2xl bg-[#09090b] shadow-inner border border-white/5 overflow-hidden flex items-end">
+          
+          {/* subtle background grid */}
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '10% 100%' }} />
+
+          {/* Meeting Blocks */}
+          {meetings.map((m, i) => (
+            <div
+              key={i}
+              title={`Ședință: ${m.title} (${m.startHour}:00 - ${m.endHour}:00)`}
+              className="absolute top-0 h-full backdrop-blur-sm group overflow-hidden border-x border-rose-500/40 opacity-90 transition-all hover:opacity-100 cursor-default"
+              style={{
+                background: 'linear-gradient(135deg, rgba(244,63,94,0.1) 0%, rgba(225,29,72,0.2) 100%)',
+                left:  `${pct(m.startHour)}%`,
+                width: `${pct(m.endHour) - pct(m.startHour)}%`,
+              }}
+            >
+              {/* Dynamic stripes overlay for meetings */}
+              <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, white 4px, white 8px)' }} />
+              
+              <div className="absolute inset-0 flex items-center justify-center p-1">
+                <span className="text-[9px] font-semibold text-rose-300 drop-shadow-md truncate text-center leading-tight group-hover:scale-105 transition-transform">
+                  {m.title}
+                </span>
+              </div>
+            </div>
+          ))}
+
+          {/* Scheduled Break Indicators */}
+          {scheduledBreakHours.map(h => {
+             const isNext = h === nextBreakHour
+             const isPast = h < now.getHours()
+             const colorClass = isNext ? 'from-amber-400 to-amber-600' : 'from-emerald-400 to-emerald-600'
+             const textColor = isNext ? 'text-amber-300' : 'text-emerald-300'
+             
+             return (
+               <div key={h} className="absolute inset-y-0 w-px z-10" style={{ left: `${pct(h)}%` }}>
+                 {/* Energy beam dropping down */}
+                 <div className={`absolute -top-1 bottom-0 w-[2px] -ml-[1px] bg-gradient-to-b ${colorClass} opacity-80`} />
+                 <div className={`absolute bottom-0 w-8 h-8 -ml-4 bg-gradient-to-t ${colorClass} blur-xl opacity-30`} />
+
+                 {/* Glowing Node */}
+                 <div className={`absolute -top-2.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-surface bg-gradient-to-br ${colorClass} shadow-[0_0_15px_rgba(0,0,0,0.5)] z-20`}>
+                    {isNext && (
+                      <div className="absolute inset-0 rounded-full animate-ping bg-amber-400 opacity-75" />
+                    )}
+                 </div>
+
+                 {/* Hover label */}
+                 <div className={`absolute -top-8 left-1/2 -translate-x-1/2 bg-surface hover-target rounded border border-white/10 px-2 py-0.5 text-[9px] font-bold shadow-lg ${textColor} whitespace-nowrap opacity-0 transition-opacity`}>
+                   Pauză {String(h).padStart(2,'0')}:00
+                 </div>
+               </div>
+             )
+          })}
+
+          {/* Current Time Needle */}
+          {isWorkingNow && (
+            <div className="absolute top-0 bottom-0 z-30 transition-all duration-1000 ease-out" style={{ left: `${currentPct}%` }}>
+               <div className="absolute inset-0 w-[1px] bg-sky-400 shadow-[0_0_8px_#38bdf8]" />
+               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-sky-400 border-[3px] border-surface shadow-md" />
+            </div>
+          )}
+        </div>
+
+        {/* Ruler Layout (Hours) */}
+        <div className="relative h-6 mt-1 border-t border-white/5 pt-1">
+          {Array.from({ length: totalHours + 1 }, (_, i) => {
+            const h = workStartHour + i
+            return (
+              <div key={h} className="absolute flex flex-col items-center -translate-x-1/2" style={{ left: `${pct(h)}%` }}>
+                <div className="w-[1px] h-1.5 bg-slate-600 mb-0.5" />
+                <span className="text-[9px] font-medium text-slate-500 tracking-tighter">
+                  {String(h).padStart(2,'0')}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Informative Legend & Badges */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-rose-500/80 shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
+            <span className="text-[10px] text-slate-400 font-medium tracking-wide">ȘEDINȚĂ</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.5)]" />
+            <span className="text-[10px] text-slate-400 font-medium tracking-wide">PAUZĂ AI</span>
+          </div>
+          {isWorkingNow && (
+             <div className="flex items-center gap-1.5">
+               <div className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_5px_rgba(56,189,248,0.5)]" />
+               <span className="text-[10px] text-slate-400 font-medium tracking-wide">ACUM</span>
+             </div>
+          )}
+        </div>
+
+        {scheduledBreakHours.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {scheduledBreakHours.map(h => {
+              const isNext = h === nextBreakHour
+              const isPast = h < now.getHours()
+              return (
+                <div
+                  key={h}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold border transition-all ${
+                    isNext
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/30'
+                      : isPast
+                      ? 'bg-surface/50 border-white/5 text-slate-600 line-through grayscale opacity-60'
+                      : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                  }`}
+                >
+                  {isNext && <span className="animate-pulse">⚡</span>}
+                  {String(h).padStart(2,'0')}:00
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* CSS definition for hover targets on timeline */}
+      <style>{`
+        .hover-target { pointer-events: none; }
+        .group:hover .hover-target, *[style*="left"]:hover .hover-target { opacity: 1; pointer-events: auto; }
+      `}</style>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function ProgramPage() {
   const navigate = useNavigate()
@@ -560,6 +759,9 @@ export default function ProgramPage() {
 
           {/* Break opportunities */}
           <BreakOpportunitiesPanel breakOpportunities={breakOpportunities} />
+
+          {/* Smart Break Timeline — AI-scheduled breaks */}
+          <SmartBreakTimeline userId={user?.userId} />
 
           {/* 4-week heatmap */}
           <FourWeekHeatmap

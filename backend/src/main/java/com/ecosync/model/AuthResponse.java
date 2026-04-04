@@ -10,6 +10,8 @@ public class AuthResponse {
     private List<String> preferredSports;
 
     private String workSchedule;
+    private int workStartHour;
+    private int workEndHour;
 
     // Daily state
     private boolean requiresWorkLocationSetup;
@@ -28,11 +30,15 @@ public class AuthResponse {
         this.breaksTakenToday = user.getBreaksTakenToday();
         this.currentStreak = user.getCurrentStreak();
         this.matchesThisMonth = user.getMatchesThisMonth();
-        this.workSchedule = user.getWorkSchedule();
+        this.workSchedule    = user.getWorkSchedule();
+        this.workStartHour   = user.getWorkStartHour();
+        this.workEndHour     = user.getWorkEndHour();
     }
 
-    public String getWorkSchedule() { return workSchedule; }
-    public String getToken() { return token; }
+    public String getWorkSchedule()  { return workSchedule; }
+    public int    getWorkStartHour()  { return workStartHour; }
+    public int    getWorkEndHour()    { return workEndHour; }
+    public String getToken()          { return token; }
     public Long getUserId() { return userId; }
     public String getName() { return name; }
     public String getCity() { return city; }
