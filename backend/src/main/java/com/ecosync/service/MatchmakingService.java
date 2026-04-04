@@ -2,56 +2,100 @@ package com.ecosync.service;
 
 import com.ecosync.model.Employee;
 import com.ecosync.model.MatchResponse;
+import com.ecosync.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class MatchmakingService {
 
     private final AiService aiService;
     private final MockDataService mockDataService;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public MatchmakingService(AiService aiService, MockDataService mockDataService) {
-        this.aiService = aiService;
+    public MatchmakingService(AiService aiService,
+                              MockDataService mockDataService,
+                              UserRepository userRepository) {
+        this.aiService       = aiService;
         this.mockDataService = mockDataService;
+        this.userRepository  = userRepository;
     }
 
     public List<MatchResponse> findMatches(Long userId, String activity) {
         List<Employee> allEmployees = mockDataService.getAllEmployees();
-        Optional<Employee> requesterOpt = mockDataService.findById(userId);
 
-        String requesterName = requesterOpt.map(Employee::getName).orElse("Employee");
-        String requesterCity = requesterOpt.map(Employee::getCity).orElse("Bucharest");
+        // ── Resolve requester info: prefer real DB user, fall back to mock ────
+        String requesterName = userRepository.findById(userId)
+                .map(u -> u.getName())
+                .orElseGet(() -> mockDataService.findById(userId)
+                        .map(Employee::getName)
+                        .orElse("Coleg"));
 
+        String requesterCity = userRepository.findById(userId)
+                .map(u -> u.getCity())
+                .orElseGet(() -> mockDataService.findById(userId)
+                        .map(Employee::getCity)
+                        .orElse("București"));
+
+        // ── Filter pool: same city first, fall back to all if < 2 matches ───
+        final String cityKey = requesterCity;
+        List<Employee> sameCity = allEmployees.stream()
+                .filter(e -> !e.getId().equals(userId))
+                .filter(e -> e.getCity().equalsIgnoreCase(cityKey))
+                .collect(Collectors.toList());
+
+        List<Employee> pool = sameCity.size() >= 2 ? sameCity
+                : allEmployees.stream()
+                        .filter(e -> !e.getId().equals(userId))
+                        .collect(Collectors.toList());
+
+        // ── Build employee list for the prompt ───────────────────────────────
         StringBuilder employeeList = new StringBuilder();
-        for (Employee emp : allEmployees) {
-            if (!emp.getId().equals(userId)) {
-                employeeList.append(String.format("- %s (%s): sports: %s\n",
-                        emp.getName(), emp.getCity(), String.join(", ", emp.getPreferredSports())));
-            }
+        for (Employee emp : pool) {
+            employeeList.append(String.format("- %s (%s): sports: %s\n",
+                    emp.getName(), emp.getCity(),
+                    String.join(", ", emp.getPreferredSports())));
         }
 
+        String cityContext = sameCity.size() >= 2
+                ? String.format("All listed colleagues are from %s — same city as the requester.", requesterCity)
+                : String.format("NOTE: Fewer than 2 colleagues from %s were available, so the list includes people from other cities too.", requesterCity);
+
         String prompt = String.format(
-                "You are a smart matchmaking AI for a corporate wellness app called EcoSync.\n" +
+                "You are SyncFit's AI matchmaking engine for a corporate wellness app.\n" +
                 "Employee %s from %s wants to play %s.\n\n" +
+                "%s\n\n" +
                 "Available colleagues:\n%s\n" +
-                "Use cross-sport reasoning (e.g., Ping Pong players have great reflexes for Padel, " +
-                "Yoga practitioners have body awareness useful for most sports).\n" +
-                "Consider city proximity as a positive factor.\n\n" +
+                "Use sport compatibility reasoning (e.g., Ping Pong players have great reflexes for Padel, " +
+                "Yoga practitioners have body awareness useful for most sports). " +
+                "Prefer colleagues from the same city.\n\n" +
                 "Return ONLY valid JSON, no markdown, no extra text:\n" +
-                "{\"matches\": [{\"name\": \"...\", \"score\": 0.95, \"message\": \"...personalized 1-sentence explanation...\"}]}\n\n" +
+                "{\"matches\": [{\"name\": \"...\", \"city\": \"...\", \"score\": 0.95, \"message\": \"...personalized 1-sentence explanation in Romanian...\"}]}\n\n" +
                 "Include 2-4 best matches, ranked by compatibility score (0.0-1.0).",
-                requesterName, requesterCity, activity, employeeList.toString()
+                requesterName, requesterCity, activity,
+                cityContext, employeeList.toString()
         );
 
         String aiJsonResponse = aiService.getAiRecommendation(prompt);
-        return parseMatchResponses(aiJsonResponse);
+        List<MatchResponse> results = parseMatchResponses(aiJsonResponse);
+
+        // ── Enrich with city from employee pool (fallback if AI omitted city) ─
+        for (MatchResponse mr : results) {
+            if (mr.getCity() == null || mr.getCity().isBlank()) {
+                pool.stream()
+                        .filter(e -> e.getName().equalsIgnoreCase(mr.getMatchedEmployeeName()))
+                        .findFirst()
+                        .ifPresent(e -> mr.setCity(e.getCity()));
+            }
+        }
+
+        return results;
     }
 
     private List<MatchResponse> parseMatchResponses(String json) {
@@ -61,11 +105,16 @@ public class MatchmakingService {
             JsonNode matches = root.get("matches");
             if (matches != null && matches.isArray()) {
                 for (JsonNode match : matches) {
-                    results.add(new MatchResponse(
+                    MatchResponse mr = new MatchResponse(
                             match.get("name").asText(),
                             match.get("score").asDouble(),
                             match.get("message").asText()
-                    ));
+                    );
+                    JsonNode cityNode = match.get("city");
+                    if (cityNode != null && !cityNode.isNull()) {
+                        mr.setCity(cityNode.asText());
+                    }
+                    results.add(mr);
                 }
             }
         } catch (Exception e) {

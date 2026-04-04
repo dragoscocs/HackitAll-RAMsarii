@@ -167,7 +167,7 @@ export default function MatchmakingFeed({ userId, userName, compact = false, aut
 function MatchCard({ match, rank }) {
   const scorePercent = Math.round(match.matchScore * 100)
   const scoreColor   = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
-  const initials     = match.matchedEmployeeName.split(' ').map(w => w[0]).join('').slice(0, 2)
+  const initials     = (match.matchedEmployeeName ?? '??').split(' ').map(w => w[0]).join('').slice(0, 2)
   return (
     <div className="bg-surface border border-surface-border rounded-xl p-4 hover:border-brand/30 transition-colors duration-200">
       <div className="flex items-start gap-3">
@@ -182,6 +182,11 @@ function MatchCard({ match, rank }) {
             <p className="text-sm font-semibold text-white truncate">{match.matchedEmployeeName}</p>
             <span className={`text-sm font-bold tabular-nums shrink-0 ${scoreColor}`}>{scorePercent}%</span>
           </div>
+          {match.city && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-400 bg-sky-400/10 border border-sky-400/20 rounded-md px-2 py-0.5 mb-2">
+              📍 {match.city}
+            </span>
+          )}
           <div className="h-1.5 bg-surface-border rounded-full mb-2 overflow-hidden">
             <div className="h-full rounded-full bg-gradient-to-r from-brand to-brand-light transition-all duration-700" style={{ width: `${scorePercent}%` }} />
           </div>

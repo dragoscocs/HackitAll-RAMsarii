@@ -18,7 +18,11 @@ const SPORTS = [
   { id: 'Running',   emoji: '🏃', label: 'Alergare',  desc: 'Grupuri de dimineață'        },
 ]
 const SPORTS_LIST = SPORTS.map(s => s.id)
-const CITIES = ['Bucharest', 'Cluj', 'Iași', 'Timișoara', 'Brașov']
+const CITIES = [
+  'București', 'Cluj', 'Iași', 'Timișoara', 'Brașov',
+  'Constanța', 'Craiova', 'Galați', 'Oradea', 'Brăila',
+  'Arad', 'Pitești', 'Sibiu', 'Satu Mare', 'Drobeta Turnu Severin',
+]
 
 // Maps workSchedule button id → [workStartHour, workEndHour]
 const WORK_SCHEDULE_MAP = {
@@ -36,7 +40,7 @@ export default function AuthPage() {
     name: '',
     email: '',
     password: '',
-    city: 'Bucharest',
+    city: 'București',
     preferredSports: [],
     workSchedule: '',
   })

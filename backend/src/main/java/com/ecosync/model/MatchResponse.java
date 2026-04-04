@@ -5,6 +5,7 @@ public class MatchResponse {
     private String matchedEmployeeName;
     private double matchScore;
     private String aiCustomMessage;
+    private String city;
 
     public MatchResponse() {}
 
@@ -22,4 +23,7 @@ public class MatchResponse {
 
     public String getAiCustomMessage() { return aiCustomMessage; }
     public void setAiCustomMessage(String aiCustomMessage) { this.aiCustomMessage = aiCustomMessage; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 }
