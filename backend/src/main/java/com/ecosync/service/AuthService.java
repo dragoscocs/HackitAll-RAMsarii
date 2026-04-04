@@ -6,6 +6,7 @@ import com.ecosync.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,10 +40,15 @@ public class AuthService {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("Email-ul este deja înregistrat.");
         }
-        User saved = userRepository.save(new User(name, email, password, city, sports));
+        User user = new User(name, email, password, city, sports);
+        user.setLastLoginDate(LocalDate.now());
+        // New users always need to set work location
+        User saved = userRepository.save(user);
         String token = UUID.randomUUID().toString();
         sessions.put(token, saved.getId());
-        return new AuthResponse(token, saved);
+        AuthResponse response = new AuthResponse(token, saved);
+        response.setRequiresWorkLocationSetup(true);
+        return response;
     }
 
     public AuthResponse login(String email, String password) {
@@ -51,9 +57,32 @@ public class AuthService {
         if (!user.getPassword().equals(password)) {
             throw new RuntimeException("Email sau parolă incorectă.");
         }
+
+        LocalDate today = LocalDate.now();
+        boolean isNewDay = !today.equals(user.getLastLoginDate());
+
+        if (isNewDay) {
+            // Daily reset
+            user.setBreaksTakenToday(0);
+            user.setWorkLocation(null);
+            user.setLastLoginDate(today);
+
+            // Reset matches if new month
+            if (user.getLastLoginDate() != null &&
+                user.getLastLoginDate().getMonth() != today.getMonth()) {
+                user.setMatchesThisMonth(0);
+            }
+
+            userRepository.save(user);
+        }
+
         String token = UUID.randomUUID().toString();
         sessions.put(token, user.getId());
-        return new AuthResponse(token, user);
+
+        AuthResponse response = new AuthResponse(token, user);
+        // Show work location modal if: new day OR location not yet set
+        response.setRequiresWorkLocationSetup(isNewDay || user.getWorkLocation() == null);
+        return response;
     }
 
     public User getUserByToken(String token) {

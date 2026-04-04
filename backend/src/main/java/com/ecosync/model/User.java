@@ -1,6 +1,7 @@
 package com.ecosync.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +28,15 @@ public class User {
 
     private int ecoPoints = 0;
     private int currentStreak = 0;
+
+    // Daily tracking fields
+    private String workLocation;          // "HOME" | "OFFICE" | null (not set today)
+    @Column(columnDefinition = "integer default 0")
+    private Integer breaksTakenToday = 0;
+    @Column(columnDefinition = "integer default 0")
+    private Integer matchesThisMonth = 0;
+    private LocalDate lastLoginDate;
+    private LocalDate lastBreakDate;      // last day user took a break (for streak)
 
     public User() {}
 
@@ -61,4 +71,19 @@ public class User {
 
     public int getCurrentStreak() { return currentStreak; }
     public void setCurrentStreak(int currentStreak) { this.currentStreak = currentStreak; }
+
+    public String getWorkLocation() { return workLocation; }
+    public void setWorkLocation(String workLocation) { this.workLocation = workLocation; }
+
+    public int getBreaksTakenToday() { return breaksTakenToday != null ? breaksTakenToday : 0; }
+    public void setBreaksTakenToday(int breaksTakenToday) { this.breaksTakenToday = breaksTakenToday; }
+
+    public int getMatchesThisMonth() { return matchesThisMonth != null ? matchesThisMonth : 0; }
+    public void setMatchesThisMonth(int matchesThisMonth) { this.matchesThisMonth = matchesThisMonth; }
+
+    public LocalDate getLastLoginDate() { return lastLoginDate; }
+    public void setLastLoginDate(LocalDate lastLoginDate) { this.lastLoginDate = lastLoginDate; }
+
+    public LocalDate getLastBreakDate() { return lastBreakDate; }
+    public void setLastBreakDate(LocalDate lastBreakDate) { this.lastBreakDate = lastBreakDate; }
 }

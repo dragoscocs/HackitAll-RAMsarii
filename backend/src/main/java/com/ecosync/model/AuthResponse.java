@@ -9,12 +9,23 @@ public class AuthResponse {
     private String city;
     private List<String> preferredSports;
 
+    // Daily state
+    private boolean requiresWorkLocationSetup;
+    private String workLocation;
+    private int breaksTakenToday;
+    private int currentStreak;
+    private int matchesThisMonth;
+
     public AuthResponse(String token, User user) {
         this.token = token;
         this.userId = user.getId();
         this.name = user.getName();
         this.city = user.getCity();
         this.preferredSports = user.getPreferredSports();
+        this.workLocation = user.getWorkLocation();
+        this.breaksTakenToday = user.getBreaksTakenToday();
+        this.currentStreak = user.getCurrentStreak();
+        this.matchesThisMonth = user.getMatchesThisMonth();
     }
 
     public String getToken() { return token; }
@@ -22,4 +33,16 @@ public class AuthResponse {
     public String getName() { return name; }
     public String getCity() { return city; }
     public List<String> getPreferredSports() { return preferredSports; }
+
+    public boolean isRequiresWorkLocationSetup() { return requiresWorkLocationSetup; }
+    public void setRequiresWorkLocationSetup(boolean requiresWorkLocationSetup) {
+        this.requiresWorkLocationSetup = requiresWorkLocationSetup;
+    }
+
+    public String getWorkLocation() { return workLocation; }
+    public void setWorkLocation(String workLocation) { this.workLocation = workLocation; }
+
+    public int getBreaksTakenToday() { return breaksTakenToday; }
+    public int getCurrentStreak() { return currentStreak; }
+    public int getMatchesThisMonth() { return matchesThisMonth; }
 }
