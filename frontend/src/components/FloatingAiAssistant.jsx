@@ -5,7 +5,7 @@ const FloatingAiAssistant = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState([
-    { role: 'ai', content: 'Salut! Sunt asistentul tău EcoSync. Te pot ajuta cu sfaturi de wellbeing, nutriție sau echipament sportiv. Cu ce începem?' }
+    { role: 'ai', content: 'Salut! Sunt asistentul tău SyncFit. Te pot ajuta cu sfaturi de wellbeing, nutriție sau echipament sportiv. Cu ce începem?' }
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -84,7 +84,7 @@ const FloatingAiAssistant = () => {
           <div className="flex items-center justify-between px-6 py-4 bg-zinc-800 border-b border-zinc-700">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-sm font-medium text-zinc-100">EcoSync AI</span>
+              <span className="text-sm font-medium text-zinc-100">SyncFit AI</span>
             </div>
           </div>
 

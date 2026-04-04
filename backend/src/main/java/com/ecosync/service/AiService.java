@@ -27,7 +27,7 @@ public class AiService {
     private final Map<String, String> responseCache = new ConcurrentHashMap<>();
 
     private static final String SYSTEM_PROMPT =
-        "SYSTEM: Ești EcoSync, asistent AI corporate. " +
+        "SYSTEM: Ești SyncFit, asistent AI corporate. " +
         "REGULI: " +
         "1. Răspunde în MAXIM 40 de cuvinte. " +
         "2. Analizează imaginile încărcate SAU răspunde doar despre sport, nutriție, ergonomie. " +

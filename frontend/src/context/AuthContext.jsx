@@ -5,7 +5,7 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const stored = localStorage.getItem('ecosync_user')
+      const stored = localStorage.getItem('syncfit_user')
       return stored ? JSON.parse(stored) : null
     } catch {
       return null
@@ -14,12 +14,12 @@ export function AuthProvider({ children }) {
 
   const login = (userData) => {
     setUser(userData)
-    localStorage.setItem('ecosync_user', JSON.stringify(userData))
+    localStorage.setItem('syncfit_user', JSON.stringify(userData))
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('ecosync_user')
+    localStorage.removeItem('syncfit_user')
   }
 
   return (

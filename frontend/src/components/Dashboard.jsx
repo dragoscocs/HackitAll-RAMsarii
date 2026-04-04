@@ -202,13 +202,11 @@ export default function Dashboard() {
 
         <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand to-brand-light flex items-center justify-center shadow-lg shadow-brand/30">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img src="/logo.png" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white tracking-tight">EcoSync</h1>
+              <h1 className="text-base font-bold text-white tracking-tight">SyncFit</h1>
               <p className="text-[10px] text-slate-500 leading-none">AI Wellbeing Platform</p>
             </div>
           </div>
@@ -243,7 +241,7 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <AnimatedShaderHero
           trustBadge={{ text: 'Pauza ta inteligentă durează 3 minute. Relaxează-te!' }}
-          headline={{ line1: 'EcoSync', line2: 'Wellbeing & Sport' }}
+          headline={{ line1: 'SyncFit', line2: 'Wellbeing & Sport' }}
           subtitle={heroSubtitle}
           buttons={{
             primary:   { text: 'Adaugă o activitate',             onClick: () => setShowModal(true) },
