@@ -24,23 +24,37 @@ public class AuthService {
 
     @PostConstruct
     public void initDemoUsers() {
-        if (userRepository.count() > 0) return;
+        if (userRepository.count() == 0) {
+            userRepository.saveAll(List.of(
+                new User("Gigel Popescu",    "gigel@ecosync.ro",  "demo123", "Bucharest", List.of("Padel", "Tennis")),
+                new User("Ana Ionescu",      "ana@ecosync.ro",    "demo123", "Bucharest", List.of("Ping Pong", "Badminton")),
+                new User("Radu Mihalcea",    "radu@ecosync.ro",   "demo123", "Cluj",      List.of("Padel", "Football")),
+                new User("Maria Constantin", "maria@ecosync.ro",  "demo123", "Bucharest", List.of("Ping Pong", "Yoga")),
+                new User("Bogdan Dumitrescu","bogdan@ecosync.ro", "demo123", "Iași",      List.of("Tennis", "Cycling")),
+                new User("Elena Stancu",     "elena@ecosync.ro",  "demo123", "Bucharest", List.of("Badminton", "Padel"))
+            ));
 
-        userRepository.saveAll(List.of(
-            new User("Gigel Popescu",    "gigel@ecosync.ro",  "demo123", "Bucharest", List.of("Padel", "Tennis")),
-            new User("Ana Ionescu",      "ana@ecosync.ro",    "demo123", "Bucharest", List.of("Ping Pong", "Badminton")),
-            new User("Radu Mihalcea",    "radu@ecosync.ro",   "demo123", "Cluj",      List.of("Padel", "Football")),
-            new User("Maria Constantin", "maria@ecosync.ro",  "demo123", "Bucharest", List.of("Ping Pong", "Yoga")),
-            new User("Bogdan Dumitrescu","bogdan@ecosync.ro", "demo123", "Iași",      List.of("Tennis", "Cycling")),
-            new User("Elena Stancu",     "elena@ecosync.ro",  "demo123", "Bucharest", List.of("Badminton", "Padel"))
-        ));
+            userRepository.findByEmail("gigel@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("10-18"); userRepository.save(u); });
+            userRepository.findByEmail("ana@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
+            userRepository.findByEmail("radu@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
+            userRepository.findByEmail("maria@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
+            userRepository.findByEmail("bogdan@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
+            userRepository.findByEmail("elena@ecosync.ro").ifPresent(u -> { u.setWorkSchedule("9-17"); userRepository.save(u); });
+        }
+
+        if (userRepository.findByEmail("andrei@ecosync.ro").isEmpty()) {
+            User andrei = new User("Andrei Dumitrescu", "andrei@ecosync.ro", "demo123", "Bucharest", List.of("Padel", "Football"));
+            andrei.setWorkSchedule("8-16");
+            userRepository.save(andrei);
+        }
     }
 
-    public AuthResponse register(String name, String email, String password, String city, List<String> sports) {
+    public AuthResponse register(String name, String email, String password, String city, List<String> sports, String workSchedule) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("Email-ul este deja înregistrat.");
         }
         User user = new User(name, email, password, city, sports);
+        user.setWorkSchedule(workSchedule != null ? workSchedule : "9-17");
         user.setLastLoginDate(LocalDate.now());
         // New users always need to set work location
         User saved = userRepository.save(user);

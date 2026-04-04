@@ -9,6 +9,8 @@ public class AuthResponse {
     private String city;
     private List<String> preferredSports;
 
+    private String workSchedule;
+
     // Daily state
     private boolean requiresWorkLocationSetup;
     private String workLocation;
@@ -26,8 +28,10 @@ public class AuthResponse {
         this.breaksTakenToday = user.getBreaksTakenToday();
         this.currentStreak = user.getCurrentStreak();
         this.matchesThisMonth = user.getMatchesThisMonth();
+        this.workSchedule = user.getWorkSchedule();
     }
 
+    public String getWorkSchedule() { return workSchedule; }
     public String getToken() { return token; }
     public Long getUserId() { return userId; }
     public String getName() { return name; }

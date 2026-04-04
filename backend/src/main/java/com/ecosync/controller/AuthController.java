@@ -28,7 +28,8 @@ public class AuthController {
                     request.getEmail(),
                     request.getPassword(),
                     request.getCity(),
-                    request.getPreferredSports()
+                    request.getPreferredSports(),
+                    request.getWorkSchedule()
             );
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {

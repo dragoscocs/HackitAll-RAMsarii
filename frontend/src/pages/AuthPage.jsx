@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatedForm, EcoOrbitDisplay, BoxReveal } from '../components/ui/SignIn'
 import { useAuth } from '../context/AuthContext'
+import LegalFooter from '../components/LegalFooter'
 
 const API_BASE = ''
 
@@ -29,6 +30,7 @@ export default function AuthPage() {
     password: '',
     city: 'Bucharest',
     preferredSports: [],
+    workSchedule: '',
   })
 
   const { login } = useAuth()
@@ -73,6 +75,7 @@ export default function AuthPage() {
     e.preventDefault()
     if (!formData.name.trim()) { setError('Numele este obligatoriu'); return }
     if (formData.preferredSports.length === 0) { setError('Alege cel puțin un sport'); return }
+    if (!formData.workSchedule) { setError('Alege programul tău de lucru'); return }
     setLoading(true)
     setError('')
     try {
@@ -85,6 +88,7 @@ export default function AuthPage() {
           password: formData.password,
           city: formData.city,
           preferredSports: formData.preferredSports,
+          workSchedule: formData.workSchedule,
         }),
       })
       const data = await res.json()
@@ -120,15 +124,16 @@ export default function AuthPage() {
   ]
 
   return (
-    <div className="flex min-h-screen bg-surface">
-      {/* Left — orbit animation */}
-      <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-surface to-surface-card" />
-        <EcoOrbitDisplay />
-      </div>
+    <div className="flex flex-col min-h-screen bg-surface">
+      <div className="flex flex-1">
+        {/* Left — orbit animation */}
+        <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-surface to-surface-card" />
+          <EcoOrbitDisplay />
+        </div>
 
-      {/* Right — form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-8 py-12">
+        {/* Right — form */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-8 py-12">
         {mode === 'login' ? (
           <AnimatedForm
             header="Bine ai revenit"
@@ -145,6 +150,7 @@ export default function AuthPage() {
         ) : (
           <RegisterForm
             formData={formData}
+            setFormData={setFormData}
             handleChange={handleChange}
             toggleSport={toggleSport}
             handleRegister={handleRegister}
@@ -155,19 +161,21 @@ export default function AuthPage() {
           />
         )}
 
-        {/* Demo hint */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-slate-600">
-            Conturi demo: <span className="text-slate-500">andrei@syncfit.ro</span> /{' '}
-            <span className="text-slate-500">elena@syncfit.ro</span> · parolă: <span className="text-slate-500">demo123</span>
-          </p>
+          {/* Demo hint */}
+          <div className="mt-8 text-center">
+            <p className="text-xs text-slate-600">
+              Conturi demo: <span className="text-slate-500">andrei@ecosync.ro</span> /{' '}
+              <span className="text-slate-500">elena@ecosync.ro</span> · parolă: <span className="text-slate-500">demo123</span>
+            </p>
+          </div>
         </div>
       </div>
+      <LegalFooter />
     </div>
   )
 }
 
-function RegisterForm({ formData, handleChange, toggleSport, handleRegister, error, loading, onGoLogin, handleGoogleLogin }) {
+function RegisterForm({ formData, setFormData, handleChange, toggleSport, handleRegister, error, loading, onGoLogin, handleGoogleLogin }) {
   return (
     <section className="w-full max-w-sm mx-auto flex flex-col gap-4">
       <BoxReveal boxColor="#6366f1" duration={0.3}>
@@ -245,6 +253,46 @@ function RegisterForm({ formData, handleChange, toggleSport, handleRegister, err
           >
             {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+
+        {/* Work Schedule */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-slate-300">
+              Program de lucru <span className="text-red-400">*</span>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { id: '8-16', label: '8:00 - 16:00', emoji: '🌅' },
+              { id: '9-17', label: '9:00 - 17:00', emoji: '☀️' },
+              { id: '10-18', label: '10:00 - 18:00', emoji: '🌤️' },
+              { id: 'flexible', label: 'Flexibil', emoji: '🔄' },
+            ].map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setFormData(p => ({ ...p, workSchedule: opt.id }))}
+                className={`flex items-center gap-2 rounded-xl p-3 border text-left transition-all ${
+                  formData.workSchedule === opt.id
+                    ? 'bg-indigo-600/25 border-indigo-500/60'
+                    : 'bg-zinc-900/60 border-surface-border hover:border-indigo-500/40'
+                }`}
+              >
+                <span className="text-xl">{opt.emoji}</span>
+                <span className={`text-xs font-semibold ${formData.workSchedule === opt.id ? 'text-white' : 'text-slate-300'}`}>
+                  {opt.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
+            <span className="text-amber-400 text-sm mt-0.5">ℹ️</span>
+            <p className="text-xs text-amber-300/80 leading-relaxed">
+              Programul tău de lucru va fi folosit pentru personalizarea calendarului și a notificărilor de pauze.
+              <strong className="text-amber-300"> Integrarea completă cu Outlook/Teams va fi disponibilă în curând.</strong>
+            </p>
+          </div>
         </div>
 
         {/* Sports */}

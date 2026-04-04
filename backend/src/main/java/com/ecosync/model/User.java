@@ -37,6 +37,7 @@ public class User {
     private Integer matchesThisMonth = 0;
     private LocalDate lastLoginDate;
     private LocalDate lastBreakDate;      // last day user took a break (for streak)
+    private String workSchedule;
 
     public User() {}
 
@@ -86,4 +87,7 @@ public class User {
 
     public LocalDate getLastBreakDate() { return lastBreakDate; }
     public void setLastBreakDate(LocalDate lastBreakDate) { this.lastBreakDate = lastBreakDate; }
+
+    public String getWorkSchedule() { return workSchedule; }
+    public void setWorkSchedule(String workSchedule) { this.workSchedule = workSchedule; }
 }

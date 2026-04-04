@@ -23,4 +23,8 @@ public class RegisterRequest {
 
     public List<String> getPreferredSports() { return preferredSports; }
     public void setPreferredSports(List<String> preferredSports) { this.preferredSports = preferredSports; }
+
+    private String workSchedule;
+    public String getWorkSchedule() { return workSchedule; }
+    public void setWorkSchedule(String workSchedule) { this.workSchedule = workSchedule; }
 }
