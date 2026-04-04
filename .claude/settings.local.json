@@ -18,7 +18,22 @@
       "Bash(cmd /c \"taskkill /F /PID 17552\")",
       "Bash(cmd /c \"taskkill /F /IM java.exe\")",
       "Bash(powershell -Command \"Stop-Process -Name java -Force -ErrorAction SilentlyContinue; Start-Sleep 3; \\(Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue\\).Count\")",
-      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"andrei@ecosync.ro\",\"password\":\"demo123\"}')"
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"andrei@ecosync.ro\",\"password\":\"demo123\"}')",
+      "Bash(taskkill /PID 2016 /F)",
+      "Bash(taskkill /F /FI \"WINDOWTITLE eq mvn*\")",
+      "Bash(taskkill /F /FI \"IMAGENAME eq java.exe\")",
+      "Bash(start cmd:*)",
+      "Bash(mvn spring-boot:run)",
+      "Bash(echo \"Backend pornit în background, PID: $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test\",\"password\":\"test\"}')",
+      "Bash(where mvn:*)",
+      "Read(//c/Users/drago/**)",
+      "Bash(\"/c/Users/drago/AppData/Roaming/JetBrains/IntelliJIdea2025.2/plugins/maven/lib/maven3/bin/mvn\" spring-boot:run)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/actuator/health)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"test@test.com\",\"password\":\"test\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' -d '{\"name\":\"Andrei Popescu\",\"email\":\"andrei@ecosync.ro\",\"password\":\"demo123\",\"city\":\"Bucharest\",\"preferredSports\":[\"Padel\",\"Tennis\",\"Running\"]}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' -d '{\"name\":\"Elena Ionescu\",\"email\":\"elena@ecosync.ro\",\"password\":\"demo123\",\"city\":\"Cluj\",\"preferredSports\":[\"Yoga\",\"Badminton\",\"Cycling\"]}')"
     ]
   }
 }
