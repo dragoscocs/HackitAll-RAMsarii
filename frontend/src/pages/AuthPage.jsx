@@ -5,7 +5,18 @@ import { useAuth } from '../context/AuthContext'
 
 const API_BASE = 'http://localhost:8080'
 
-const SPORTS_LIST = ['Padel', 'Tennis', 'Ping Pong', 'Badminton', 'Football', 'Cycling', 'Yoga', 'Ski', 'Running']
+const SPORTS = [
+  { id: 'Padel',     emoji: '🎾', label: 'Padel',     desc: 'Curți disponibile în oraș'   },
+  { id: 'Tennis',    emoji: '🎾', label: 'Tennis',    desc: 'Parteneri la nivel similar'  },
+  { id: 'Ping Pong', emoji: '🏓', label: 'Ping Pong', desc: 'În sala de la birou'         },
+  { id: 'Badminton', emoji: '🏸', label: 'Badminton', desc: 'Antrenamente ușoare'         },
+  { id: 'Football',  emoji: '⚽', label: 'Fotbal',    desc: 'Echipe de 5–11 jucători'     },
+  { id: 'Cycling',   emoji: '🚴', label: 'Ciclism',   desc: 'Grupuri de pedalat'          },
+  { id: 'Yoga',      emoji: '🧘', label: 'Yoga',      desc: 'Mindfulness & stretching'    },
+  { id: 'Ski',       emoji: '⛷️', label: 'Ski',       desc: 'Weekenduri la munte'         },
+  { id: 'Running',   emoji: '🏃', label: 'Alergare',  desc: 'Grupuri de dimineață'        },
+]
+const SPORTS_LIST = SPORTS.map(s => s.id)
 const CITIES = ['Bucharest', 'Cluj', 'Iași', 'Timișoara', 'Brașov']
 
 export default function AuthPage() {
@@ -238,22 +249,36 @@ function RegisterForm({ formData, handleChange, toggleSport, handleRegister, err
 
         {/* Sports */}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-300">Sporturi preferate <span className="text-red-400">*</span></label>
-          <div className="flex flex-wrap gap-2">
-            {SPORTS_LIST.map((sport) => {
-              const selected = formData.preferredSports.includes(sport)
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-slate-300">
+              Sporturi preferate <span className="text-red-400">*</span>
+            </label>
+            {formData.preferredSports.length > 0 && (
+              <span className="text-xs text-brand-light font-medium">
+                {formData.preferredSports.length} selectat{formData.preferredSports.length > 1 ? 'e' : ''}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {SPORTS.map(({ id, emoji, label, desc }) => {
+              const active = formData.preferredSports.includes(id)
               return (
                 <button
-                  key={sport}
+                  key={id}
                   type="button"
-                  onClick={() => toggleSport(sport)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                    selected
-                      ? 'bg-brand border-brand text-white shadow-md shadow-brand/30'
-                      : 'bg-transparent border-surface-border text-slate-400 hover:border-brand/50 hover:text-slate-200'
+                  onClick={() => toggleSport(id)}
+                  className={`relative flex flex-col items-center gap-1 rounded-xl p-3 border text-center transition-all duration-200 hover:scale-[1.03] active:scale-95 ${
+                    active
+                      ? 'bg-indigo-600/25 border-indigo-500/60 shadow-lg shadow-indigo-500/20'
+                      : 'bg-zinc-900/60 border-surface-border hover:border-indigo-500/40 hover:bg-zinc-800/60'
                   }`}
                 >
-                  {sport}
+                  {active && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[9px] text-white font-bold">✓</span>
+                  )}
+                  <span className="text-2xl leading-none">{emoji}</span>
+                  <span className={`text-xs font-semibold leading-tight ${active ? 'text-white' : 'text-slate-300'}`}>{label}</span>
+                  <span className="text-[10px] text-slate-500 leading-tight hidden sm:block">{desc}</span>
                 </button>
               )
             })}

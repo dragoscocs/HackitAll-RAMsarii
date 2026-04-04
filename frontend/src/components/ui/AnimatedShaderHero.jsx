@@ -162,7 +162,7 @@ class PointerHandler {
   get first()  { return this.pointers.values().next().value ?? this.lastCoords }
 }
 
-function useShaderBackground() {
+export function useShaderBackground() {
   const canvasRef        = useRef(null)
   const rafRef           = useRef(null)
   const rendererRef      = useRef(null)

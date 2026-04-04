@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { CalendarProvider } from './context/CalendarContext'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './components/Dashboard'
+import PausePage from './pages/PausePage'
+import ProgramPage from './pages/ProgramPage'
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth()
@@ -16,24 +19,12 @@ function PublicRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <AuthPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login"     element={<PublicRoute><AuthPage /></PublicRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/pause"     element={<ProtectedRoute><PausePage /></ProtectedRoute>} />
+      <Route path="/program"   element={<ProtectedRoute><ProgramPage /></ProtectedRoute>} />
+      <Route path="/"          element={<Navigate to="/dashboard" replace />} />
+      <Route path="*"          element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
 }
@@ -41,9 +32,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <CalendarProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </CalendarProvider>
     </AuthProvider>
   )
 }

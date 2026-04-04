@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, X } from 'lucide-react'
+import { LogOut, X, CalendarDays } from 'lucide-react'
 import SmartBreak from './SmartBreak'
 import MatchmakingFeed, { SPORT_ICONS, SPORTS_LIST } from './MatchmakingFeed'
 import FloatingAiAssistant from './FloatingAiAssistant'
 import AnimatedShaderHero from './ui/AnimatedShaderHero'
 import { useAuth } from '../context/AuthContext'
+import { useCalendar } from '../context/CalendarContext'
 
 const TICKER_ITEMS = [
   '🎾 Alex a postat un meci de Padel pentru azi la 18:00',
@@ -145,6 +146,7 @@ function ActivityModal({ userId, userName, onClose }) {
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
+  const { moodScore, moodLabel } = useCalendar()
   const navigate = useNavigate()
 
   const [tickerIndex,   setTickerIndex]   = useState(0)
@@ -251,10 +253,10 @@ export default function Dashboard() {
         />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AnimatedStatCard icon="🏃" label="Streak"     target={HERO_STREAK} unit=" zile" sub="+2 săptămâna asta" color="emerald" delay={0}   />
-          <AnimatedStatCard icon="😊" label="Mood Score" target={82}           unit="/100" sub="↑ față de ieri"    color="violet"  delay={100} />
-          <AnimatedStatCard icon="🤝" label="Matches"    target={HERO_MATCHES} unit=""     sub="Luna aceasta"      color="sky"     delay={200} />
-          <AnimatedStatCard icon="☕" label="Pauze"      target={3}            unit=""     sub="Recomandat: 5"     color="amber"   delay={300} />
+          <AnimatedStatCard icon="🏃" label="Streak"     target={HERO_STREAK} unit=" zile" sub="+2 săptămâna asta"     color="emerald" delay={0}   />
+          <AnimatedStatCard icon="😊" label="Mood Score" target={moodScore}   unit="/100" sub={moodLabel.text} color="violet"  delay={100} link="/program" onLink={() => navigate('/program')} />
+          <AnimatedStatCard icon="🤝" label="Matches"    target={HERO_MATCHES} unit=""    sub="Luna aceasta"           color="sky"     delay={200} />
+          <AnimatedStatCard icon="☕" label="Pauze"      target={3}            unit=""    sub="Recomandat: 5"          color="amber"   delay={300} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -284,7 +286,7 @@ export default function Dashboard() {
   )
 }
 
-function AnimatedStatCard({ icon, label, target, unit, sub, color, delay }) {
+function AnimatedStatCard({ icon, label, target, unit, sub, color, delay, onLink }) {
   const value = useCountUp(target)
   const colorMap = {
     emerald: { text: 'text-emerald-400', bg: 'bg-emerald-400/10', glow: 'hover:shadow-emerald-500/10' },
@@ -294,9 +296,15 @@ function AnimatedStatCard({ icon, label, target, unit, sub, color, delay }) {
   }
   const c = colorMap[color]
   return (
-    <div className={`stat-card hover:scale-[1.02] hover:shadow-xl ${c.glow} transition-all duration-300 cursor-default animate-fade-in`}
-      style={{ animationDelay: `${delay}ms` }}>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${c.bg}`}>{icon}</div>
+    <div
+      onClick={onLink}
+      className={`stat-card hover:scale-[1.02] hover:shadow-xl ${c.glow} transition-all duration-300 animate-fade-in ${onLink ? 'cursor-pointer' : 'cursor-default'}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${c.bg}`}>{icon}</div>
+        {onLink && <CalendarDays className="w-3.5 h-3.5 text-slate-600" />}
+      </div>
       <p className={`text-3xl font-bold mt-2 tabular-nums ${c.text}`}>{value}{unit}</p>
       <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">{label}</p>
       <p className="text-xs text-slate-500">{sub}</p>
