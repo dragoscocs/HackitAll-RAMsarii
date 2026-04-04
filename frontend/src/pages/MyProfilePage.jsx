@@ -33,6 +33,7 @@ export default function MyProfilePage() {
   const { user, login, logout } = useAuth()
   const navigate = useNavigate()
   const [saved, setSaved]   = useState(false)
+  const [error, setError]   = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm]     = useState({
     name:              user?.name              ?? '',
@@ -52,6 +53,7 @@ export default function MyProfilePage() {
 
   const handleSave = async () => {
     setSaving(true)
+    setError(false)
     try {
       const res = await fetch(`/api/users/${user.id || user.userId}`, {
         method: 'PUT',
@@ -63,9 +65,14 @@ export default function MyProfilePage() {
         login({ ...user, ...updatedUser })
         setSaved(true)
         setTimeout(() => setSaved(false), 2500)
+      } else {
+        setError(true)
+        setTimeout(() => setError(false), 2500)
       }
     } catch (e) {
       console.error(e)
+      setError(true)
+      setTimeout(() => setError(false), 2500)
     } finally {
       setSaving(false)
     }
@@ -130,6 +137,13 @@ export default function MyProfilePage() {
             <Check className="w-3.5 h-3.5" />
           </div>
           <span className="font-medium text-sm">Modificările au fost salvate cu succes!</span>
+        </div>
+      </div>
+
+      <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${error ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className="bg-red-500/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl shadow-red-500/20 flex items-center gap-3 border border-red-400/30">
+          <span className="text-lg">⚠️</span>
+          <span className="font-medium text-sm">Eroare la salvare! Verifică conexiunea.</span>
         </div>
       </div>
 
