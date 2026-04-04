@@ -143,16 +143,9 @@ function MatchesChart({ userId }) {
         >
           <defs>
             <linearGradient id="matchGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.35" />
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.2" />
               <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
             </linearGradient>
-            <filter id="lineGlow">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
           </defs>
 
           {/* Horizontal gridlines */}
@@ -178,7 +171,7 @@ function MatchesChart({ userId }) {
             />
           )}
 
-          {/* Animated line */}
+          {/* Animated line — flat, no glow */}
           {data && (
             <motion.path
               d={linePath}
@@ -187,7 +180,6 @@ function MatchesChart({ userId }) {
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              filter="url(#lineGlow)"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
               transition={{ duration: 1.1, delay: 0.2, ease: 'easeOut' }}
@@ -204,41 +196,34 @@ function MatchesChart({ userId }) {
                 width={CHART_W / n}
                 height={CHART_H}
                 fill="transparent"
-                className="cursor-pointer"
+                className="cursor-crosshair"
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
               />
 
-              {/* Dot */}
+              {/* Vertical guide line at hover — appears exactly at data point x */}
+              {hovered === i && (
+                <line
+                  x1={pt.x} y1={0}
+                  x2={pt.x} y2={CHART_H}
+                  stroke="rgba(167,139,250,0.3)"
+                  strokeWidth="0.6"
+                  strokeDasharray="2 2"
+                />
+              )}
+
+              {/* Dot — always shows on last point, shows on hover for others */}
               {(hovered === i || i === n - 1) && (
                 <motion.circle
                   cx={pt.x}
                   cy={pt.y}
                   r="1.8"
                   fill={i === n - 1 ? '#a78bfa' : '#c4b5fd'}
-                  stroke={i === n - 1 ? '#a78bfa' : '#c4b5fd'}
                   strokeWidth="0"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 />
-              )}
-
-              {/* Value label on hover */}
-              {hovered === i && (
-                <motion.text
-                  x={pt.x}
-                  y={pt.y - 6}
-                  textAnchor="middle"
-                  fontSize="6"
-                  fill="#c4b5fd"
-                  fontWeight="bold"
-                  fontFamily="inherit"
-                  initial={{ opacity: 0, y: 2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  {pt.matches}
-                </motion.text>
               )}
             </g>
           ))}
@@ -253,24 +238,28 @@ function MatchesChart({ userId }) {
         </svg>
       </div>
 
-      {/* X-axis labels — HTML, so they're always legible */}
-      <div className="flex justify-between px-0">
-        {points.map((pt, i) => (
-          <button
-            key={i}
-            onMouseEnter={() => setHovered(i)}
-            onMouseLeave={() => setHovered(null)}
-            className={`flex-1 text-center text-[11px] font-medium leading-tight transition-colors duration-150 cursor-default select-none ${
-              hovered === i
-                ? 'text-violet-300'
-                : i === n - 1
-                ? 'text-violet-400'
-                : 'text-slate-500'
-            }`}
-          >
-            {pt.month}
-          </button>
-        ))}
+      {/* X-axis labels — absolutely positioned to align exactly under each data point */}
+      <div className="relative h-4">
+        {points.map((pt, i) => {
+          const leftPct = n > 1 ? (i / (n - 1)) * 100 : 50
+          return (
+            <button
+              key={i}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              style={{ left: `${leftPct}%` }}
+              className={`absolute top-0 -translate-x-1/2 text-[11px] leading-none whitespace-nowrap transition-all duration-150 cursor-default select-none ${
+                hovered === i
+                  ? 'text-violet-300 font-semibold'
+                  : i === n - 1
+                  ? 'text-violet-400 font-medium'
+                  : 'text-slate-500 font-medium'
+              }`}
+            >
+              {pt.month}
+            </button>
+          )
+        })}
       </div>
     </motion.div>
   )
