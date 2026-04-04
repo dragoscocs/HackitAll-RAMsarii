@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Edit3 } from 'lucide-react'
+import { ArrowLeft, Check, Edit3, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const SPORTS = [
@@ -29,7 +29,7 @@ function getInitials(name = '') {
 }
 
 export default function MyProfilePage() {
-  const { user, login } = useAuth()
+  const { user, login, logout } = useAuth()
   const navigate = useNavigate()
   const [saved, setSaved]   = useState(false)
   const [saving, setSaving] = useState(false)
@@ -68,6 +68,11 @@ export default function MyProfilePage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
   }
 
   const workLocationLabel = user?.workLocation === 'HOME'
@@ -316,17 +321,28 @@ export default function MyProfilePage() {
         </div>
 
         {/* ── Bottom save ── */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-4 rounded-2xl bg-brand hover:bg-brand-dark text-white font-semibold transition-all duration-200 hover:scale-[1.01] active:scale-99 shadow-lg shadow-brand/25 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {saving 
-            ? 'Se salvează...' 
-            : saved
-              ? <><Check className="w-4 h-4" /> Profil salvat cu succes!</>
-              : 'Salvează profilul'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleLogout}
+            className="px-5 py-4 rounded-2xl bg-surface hover:bg-red-500/10 border border-surface-border hover:border-red-500/30 text-slate-400 hover:text-red-400 font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+            title="Deconectare"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="hidden sm:inline">Deconectare</span>
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-4 rounded-2xl bg-brand hover:bg-brand-dark text-white font-semibold transition-all duration-200 hover:scale-[1.01] active:scale-99 shadow-lg shadow-brand/25 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving 
+              ? 'Se salvează...' 
+              : saved
+                ? <><Check className="w-4 h-4" /> Profil salvat cu succes!</>
+                : 'Salvează profilul'}
+          </button>
+        </div>
       </main>
     </div>
   )
