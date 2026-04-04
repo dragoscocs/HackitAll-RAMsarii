@@ -1,17 +1,57 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, CalendarDays, Home, Building2, ChevronRight, Search } from 'lucide-react'
+import { LogOut, CalendarDays, Home, Building2, ChevronRight, Check, X, Bell } from 'lucide-react'
 import FloatingAiAssistant from './FloatingAiAssistant'
 import AnimatedShaderHero from './ui/AnimatedShaderHero'
+import { GlowingButton } from './ui/GlowingButton'
 import { useAuth } from '../context/AuthContext'
 import { useCalendar } from '../context/CalendarContext'
+import { useSportLobby } from '../context/SportLobbyContext'
+import { SPORT_META } from '../pages/SportPage'
 
-/* ── Shared sport constants ───────────────────────────────────────── */
-const SPORT_ICONS = {
-  Padel: '🎾', 'Ping Pong': '🏓', Tennis: '🎾', Badminton: '🏸',
-  Football: '⚽', Yoga: '🧘', Cycling: '🚴', Ski: '⛷️', Running: '🏃',
+/* ── All sports with metadata ─────────────────────────────────────── */
+const ALL_SPORTS_META = [
+  { name: 'Padel',       icon: '🎾', group: 'racket'   },
+  { name: 'Tennis',      icon: '🎾', group: 'racket'   },
+  { name: 'Ping Pong',   icon: '🏓', group: 'racket'   },
+  { name: 'Badminton',   icon: '🏸', group: 'racket'   },
+  { name: 'Squash',      icon: '🏸', group: 'racket'   },
+  { name: 'Football',    icon: '⚽', group: 'team'     },
+  { name: 'Basketball',  icon: '🏀', group: 'team'     },
+  { name: 'Volleyball',  icon: '🏐', group: 'team'     },
+  { name: 'Running',     icon: '🏃', group: 'outdoor'  },
+  { name: 'Cycling',     icon: '🚴', group: 'outdoor'  },
+  { name: 'Ski',         icon: '⛷️', group: 'outdoor' },
+  { name: 'Swimming',    icon: '🏊', group: 'outdoor'  },
+  { name: 'Hiking',      icon: '🥾', group: 'outdoor'  },
+  { name: 'Yoga',        icon: '🧘', group: 'wellness' },
+  { name: 'Gym',         icon: '💪', group: 'wellness' },
+  { name: 'CrossFit',    icon: '🏋️', group: 'wellness'},
+]
+
+function sortedSports(userPreferred) {
+  const prefSet    = new Set(userPreferred)
+  const prefGroups = new Set(
+    ALL_SPORTS_META.filter(s => prefSet.has(s.name)).map(s => s.group)
+  )
+  return [...ALL_SPORTS_META].sort((a, b) => {
+    const sa = prefSet.has(a.name) ? 3 : prefGroups.has(a.group) ? 2 : 1
+    const sb = prefSet.has(b.name) ? 3 : prefGroups.has(b.group) ? 2 : 1
+    if (sa !== sb) return sb - sa
+    if (sa === 3) return userPreferred.indexOf(a.name) - userPreferred.indexOf(b.name)
+    return a.name.localeCompare(b.name)
+  })
 }
-const ALL_SPORTS = ['Padel', 'Tennis', 'Ping Pong', 'Badminton', 'Football', 'Yoga', 'Cycling', 'Ski', 'Running']
+
+function sportGlowOpacity(sport, userPreferred) {
+  const prefSet    = new Set(userPreferred)
+  const prefGroups = new Set(
+    ALL_SPORTS_META.filter(s => prefSet.has(s.name)).map(s => s.group)
+  )
+  if (prefSet.has(sport.name)) return 1
+  if (prefGroups.has(sport.group)) return 0.5
+  return 0.2
+}
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
 function useCountUp(target, duration = 1200) {
@@ -229,146 +269,122 @@ function SmartBreakBanner({ userId, workLocation }) {
   )
 }
 
-/* ── Match card ──────────────────────────────────────────────────── */
-function MatchCard({ match, rank }) {
-  const scorePercent = Math.round((match.matchScore ?? 0) * 100)
-  const scoreColor   = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
-  const initials     = (match.matchedEmployeeName ?? '??').split(' ').map(w => w[0]).join('').slice(0, 2)
+
+/* ── Invitation banner ────────────────────────────────────────────── */
+function InvitationBanner() {
+  const navigate = useNavigate()
+  const { myPendingInvitations, acceptInvitation, declineInvitation } = useSportLobby()
+
+  if (!myPendingInvitations?.length) return null
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-2xl p-4 hover:border-brand/30 transition-all duration-200">
-      <div className="flex items-start gap-3">
-        <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-xs font-bold text-brand-light">#{rank}</span>
-        </div>
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm font-bold text-white shrink-0">
-          {initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="text-sm font-semibold text-white truncate">{match.matchedEmployeeName}</p>
-            <span className={`text-sm font-bold tabular-nums shrink-0 ${scoreColor}`}>{scorePercent}%</span>
+    <div className="flex flex-col gap-2 animate-slide-up">
+      {myPendingInvitations.map(inv => {
+        const meta = SPORT_META[inv.sport] ?? { icon: '🏅', color: '#6366f1' }
+        return (
+          <div
+            key={inv.id}
+            className="rounded-2xl border px-5 py-4 flex items-center gap-4"
+            style={{ background: `${meta.color}08`, borderColor: `${meta.color}30` }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+              style={{ background: `${meta.color}20`, border: `1px solid ${meta.color}40` }}
+            >
+              {meta.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">
+                🎾 Invitație de la <span style={{ color: meta.color }}>{inv.fromName}</span>
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {inv.sport} · {inv.date} la {inv.time} · {inv.location}
+              </p>
+              {inv.message && (
+                <p className="text-xs text-slate-500 italic mt-0.5">"{inv.message}"</p>
+              )}
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => declineInvitation(inv.id)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-slate-400 hover:text-red-400 text-xs font-medium transition-all"
+              >
+                <X className="w-3.5 h-3.5" /> Refuz
+              </button>
+              <button
+                onClick={() => { acceptInvitation(inv.id); navigate(`/sport/${inv.sport}`) }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-xs font-semibold transition-all hover:scale-[1.03]"
+                style={{ background: meta.color }}
+              >
+                <Check className="w-3.5 h-3.5" /> Accept
+              </button>
+            </div>
           </div>
-          {match.city && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-sky-400 bg-sky-400/10 border border-sky-400/20 rounded-md px-2 py-0.5 mb-2">
-              📍 {match.city}
-            </span>
-          )}
-          <div className="h-1.5 bg-surface-border rounded-full mb-2 overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-brand to-brand-light transition-all duration-700"
-              style={{ width: `${scorePercent}%` }} />
-          </div>
-          <p className="text-xs text-slate-400 leading-relaxed">💡 {match.aiCustomMessage}</p>
-        </div>
-      </div>
+        )
+      })}
     </div>
   )
 }
 
-/* ── Matchmaking Section ─────────────────────────────────────────── */
-function MatchmakingSection({ userId, userName, userSports, userCity }) {
-  const [selectedSport, setSelectedSport] = useState(null)
-  const [matches,       setMatches]       = useState([])
-  const [loading,       setLoading]       = useState(false)
-  const [hasFetched,    setHasFetched]    = useState(false)
-  const [error,         setError]         = useState(null)
-
-  const sportsToShow = userSports.length > 0 ? userSports : ALL_SPORTS
-
-  const findMatches = useCallback(async (sport) => {
-    if (!sport) return
-    setLoading(true); setError(null); setHasFetched(false)
-    try {
-      const res = await fetch(`/api/matchmaking/${userId}?activity=${encodeURIComponent(sport)}`)
-      if (!res.ok) throw new Error('Failed')
-      setMatches(await res.json())
-      setHasFetched(true)
-    } catch {
-      setError('Nu s-a putut căuta. Verifică conexiunea și încearcă din nou.')
-    } finally {
-      setLoading(false)
-    }
-  }, [userId])
-
-  const activeSport = selectedSport ?? sportsToShow[0]
+/* ── Sport grid section ───────────────────────────────────────────── */
+function SportGridSection({ userSports, userCity }) {
+  const navigate = useNavigate()
+  const sorted   = sortedSports(userSports)
 
   return (
     <section className="space-y-5 animate-fade-in">
-      {/* Section header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-white">🤝 Găsește colegi pentru sport</h2>
+          <h2 className="text-base font-bold text-white">🤝 Sport cu colegii</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {userCity
-              ? <>Colegi din <strong className="text-slate-400">{userCity}</strong> · filtrare automată după oraș</>
-              : 'Colegi din același oraș · AI-powered pairing'}
+              ? <>Lobby-uri și parteneri din <strong className="text-slate-400">{userCity}</strong> · recomandat de AI</>
+              : 'Alege sportul și găsește parteneri sau creează un lobby'}
           </p>
+        </div>
+        <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-600 bg-white/3 border border-white/8 rounded-xl px-3 py-2 shrink-0">
+          <span>✨</span> AI-powered pairing
         </div>
       </div>
 
-      {/* Sport picker + find button row */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex flex-wrap gap-2 flex-1">
-          {sportsToShow.map(sport => (
-            <button
-              key={sport}
-              onClick={() => { setSelectedSport(sport); setHasFetched(false) }}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all duration-200 ${
-                (selectedSport === sport || (!selectedSport && sport === sportsToShow[0]))
-                  ? 'bg-brand/20 border-brand/50 text-white scale-[1.03] shadow-sm shadow-brand/20'
-                  : 'bg-surface border-surface-border text-slate-400 hover:border-brand/30 hover:text-slate-300'
-              }`}
+      {/* Sport grid */}
+      <div className="flex flex-wrap gap-2">
+        {sorted.map(sport => {
+          const meta    = SPORT_META[sport.name] ?? { color: '#6366f1' }
+          const opacity = sportGlowOpacity(sport, userSports)
+          const isTop   = userSports.includes(sport.name)
+
+          return (
+            <GlowingButton
+              key={sport.name}
+              glowColor={meta.color}
+              onClick={() => navigate(`/sport/${encodeURIComponent(sport.name)}`)}
+              className={`transition-all duration-200 ${isTop ? 'ring-1' : ''}`}
+              style={{
+                opacity: 0.3 + opacity * 0.7,
+                ringColor: isTop ? `${meta.color}40` : 'transparent',
+              }}
             >
-              <span>{SPORT_ICONS[sport] ?? '🏅'}</span>
-              {sport}
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={() => findMatches(activeSport)}
-          disabled={loading}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand/15 hover:bg-brand/25 border border-brand/25 hover:border-brand/50 text-brand-light text-sm font-semibold transition-all duration-200 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
-        >
-          {loading
-            ? <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>Se caută…</>
-            : <><Search className="w-4 h-4" />Găsește colegi{activeSport ? ` de ${activeSport}` : ''}</>
-          }
-        </button>
+              <span style={{ fontSize: '1rem', lineHeight: 1 }}>{sport.icon}</span>
+              <span className="font-semibold">{sport.name}</span>
+              {isTop && (
+                <span
+                  className="ml-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md"
+                  style={{ background: `${meta.color}25`, color: meta.color }}
+                >
+                  ★
+                </span>
+              )}
+            </GlowingButton>
+          )
+        })}
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl p-3">
-          ⚠️ {error}
-        </div>
-      )}
-
-      {/* Results */}
-      {hasFetched && (
-        <div className="animate-slide-up">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">
-            Top compatibili · {userCity || 'Același oraș'} · {activeSport}
-          </p>
-          {matches.length === 0
-            ? (
-              <div className="text-center py-10 text-slate-400">
-                <span className="text-4xl block mb-3">😔</span>
-                <p className="text-sm">Niciun coleg din {userCity} activ pentru {activeSport}.</p>
-                <p className="text-xs text-slate-600 mt-1">Încearcă alt sport sau revino mai târziu.</p>
-              </div>
-            )
-            : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {matches.map((m, i) => <MatchCard key={i} match={m} rank={i + 1} />)}
-              </div>
-            )
-          }
-        </div>
-      )}
+      {/* Hint */}
+      <p className="text-[11px] text-slate-600 flex items-center gap-1.5">
+        <span>💡</span>
+        Sporturile tale preferate sunt cele mai luminate. Apasă pe orice sport pentru a vedea lobby-uri active și recomandări AI.
+      </p>
     </section>
   )
 }
@@ -525,13 +541,14 @@ export default function Dashboard() {
           />
         </div>
 
+        {/* Pending sport invitations */}
+        <InvitationBanner />
+
         {/* Divider */}
         <div className="border-t border-surface-border" />
 
-        {/* Matchmaking Section — full width below flip cards */}
-        <MatchmakingSection
-          userId={user?.userId ?? 1}
-          userName={user?.name}
+        {/* Sport grid — glowing buttons sorted by preference */}
+        <SportGridSection
           userSports={preferredSports}
           userCity={userCity}
         />
