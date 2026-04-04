@@ -1,0 +1,25 @@
+package com.ecosync.model;
+
+public class MatchResponse {
+
+    private String matchedEmployeeName;
+    private double matchScore;
+    private String aiCustomMessage;
+
+    public MatchResponse() {}
+
+    public MatchResponse(String matchedEmployeeName, double matchScore, String aiCustomMessage) {
+        this.matchedEmployeeName = matchedEmployeeName;
+        this.matchScore = matchScore;
+        this.aiCustomMessage = aiCustomMessage;
+    }
+
+    public String getMatchedEmployeeName() { return matchedEmployeeName; }
+    public void setMatchedEmployeeName(String matchedEmployeeName) { this.matchedEmployeeName = matchedEmployeeName; }
+
+    public double getMatchScore() { return matchScore; }
+    public void setMatchScore(double matchScore) { this.matchScore = matchScore; }
+
+    public String getAiCustomMessage() { return aiCustomMessage; }
+    public void setAiCustomMessage(String aiCustomMessage) { this.aiCustomMessage = aiCustomMessage; }
+}

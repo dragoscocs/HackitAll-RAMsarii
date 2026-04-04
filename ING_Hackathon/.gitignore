@@ -1,0 +1,18 @@
+# Dependencies
+frontend/node_modules/
+frontend/dist/
+
+# Backend build
+backend/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IMPORTANT: Gemini API key — never commit this!
+backend/src/main/resources/application.properties
