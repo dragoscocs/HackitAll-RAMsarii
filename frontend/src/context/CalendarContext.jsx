@@ -123,6 +123,103 @@ function calcBreakOpportunities(todayEvts) {
   return slots
 }
 
+function calcSmartBreaks(todayEvts, workSchedule = '9-17') {
+  const resultBreaks = []
+  const today = new Date()
+  
+  const [startH, endH] = workSchedule.split('-').map(Number)
+  const workStart = new Date(today); workStart.setHours(startH, 0, 0, 0)
+  const workEnd   = new Date(today); workEnd.setHours(endH, 0, 0, 0)
+  
+  const bufferStart = new Date(workStart.getTime() + 60 * 60 * 1000) 
+  const bufferEnd   = new Date(workEnd.getTime() - 60 * 60 * 1000)   
+
+  const sortedMeetings = todayEvts
+    .filter(m => new Date(m.end) > workStart && new Date(m.start) < workEnd)
+    .sort((a,b) => new Date(a.start) - new Date(b.start))
+
+  // 1. Identify Fatigue Blocks (Continuous meetings with < 5 min gap)
+  const fatigueBlocks = []
+  if (sortedMeetings.length > 0) {
+    let currentBlock = [sortedMeetings[0]]
+    for (let i = 1; i < sortedMeetings.length; i++) {
+      const prev = currentBlock[currentBlock.length - 1]
+      const curr = sortedMeetings[i]
+      const gapMin = (new Date(curr.start) - new Date(prev.end)) / 60000
+      
+      if (gapMin < 5) currentBlock.push(curr)
+      else {
+        fatigueBlocks.push([...currentBlock])
+        currentBlock = [curr]
+      }
+    }
+    fatigueBlocks.push([...currentBlock])
+  }
+
+  // Schedule Priority 1 Breaks: If block duration >= 90 mins
+  fatigueBlocks.forEach(block => {
+    const blockStart = new Date(block[0].start)
+    const blockEnd = new Date(block[block.length - 1].end)
+    const totalDurationMins = (blockEnd - blockStart) / 60000
+
+    if (totalDurationMins >= 90) { 
+      const breakTime = new Date(blockEnd.getTime() + 2 * 60 * 1000)
+      if (breakTime >= workStart && breakTime <= workEnd) {
+        resultBreaks.push({ 
+          type: 'FATIGUE_RECOVERY', 
+          time: breakTime, 
+          reason: `Recuperare post-efort intensiv (${Math.round(totalDurationMins)} min continue)` 
+        })
+      }
+    }
+  })
+
+  // Target 6 breaks always
+  let neededRegularBreaks = 6 - resultBreaks.length
+
+  // Calculate free slots for regular breaks
+  const freeSlots = []
+  let cursor = bufferStart
+
+  sortedMeetings.forEach(m => {
+    const mStart = new Date(m.start)
+    if (mStart > cursor && cursor < bufferEnd) {
+      const slotEnd = mStart < bufferEnd ? mStart : bufferEnd
+      const gapMin = (slotEnd - cursor) / 60000
+      if (gapMin >= 15) freeSlots.push({ start: new Date(cursor), end: new Date(slotEnd) })
+    }
+    if (new Date(m.end) > cursor) cursor = new Date(m.end)
+  })
+
+  if (cursor < bufferEnd) {
+    const gapMin = (bufferEnd - cursor) / 60000
+    if (gapMin >= 15) freeSlots.push({ start: new Date(cursor), end: new Date(bufferEnd) })
+  }
+
+  const isValidGap = (proposedTime) => resultBreaks.every(b => Math.abs(b.time - proposedTime) / 60000 >= 45)
+
+  // Distribute neededRegularBreaks over freeSlots
+  // A simple linear pass logic using 45 minute steps inside valid free slots
+  for (let slot of freeSlots) {
+      let slotCursor = new Date(slot.start.getTime() + 5 * 60000); // Start 5 mins into the free slot
+      while (slotCursor < new Date(slot.end.getTime() - 5 * 60000) && neededRegularBreaks > 0) {
+          if (isValidGap(slotCursor)) {
+              resultBreaks.push({
+                  type: 'REGULAR',
+                  time: new Date(slotCursor),
+                  reason: 'Pauză de distribuție activă'
+              })
+              neededRegularBreaks--;
+              slotCursor = new Date(slotCursor.getTime() + 45 * 60000); // Jump forward 45 minutes
+          } else {
+              slotCursor = new Date(slotCursor.getTime() + 5 * 60000); // Increment slowly to find a valid spot
+          }
+      }
+  }
+
+  return resultBreaks.sort((a,b) => a.time - b.time)
+}
+
 const CalendarContext = createContext(null)
 
 export function CalendarProvider({ children }) {
@@ -170,6 +267,10 @@ export function CalendarProvider({ children }) {
   }, [events])
 
   const breakOpportunities = useMemo(() => calcBreakOpportunities(todayEvents), [todayEvents])
+  const smartBreaks        = useMemo(() => {
+    const user = JSON.parse(localStorage.getItem('syncfit_user') || '{}')
+    return calcSmartBreaks(todayEvents, user.workSchedule)
+  }, [todayEvents])
 
   const moodScore   = useMemo(() => calcMoodScore(todayEvents, breaksToday), [todayEvents, breaksToday])
   const moodFactors = useMemo(() => getMoodFactors(todayEvents, breaksToday), [todayEvents, breaksToday])
@@ -216,7 +317,7 @@ export function CalendarProvider({ children }) {
       breaksToday, recordBreak,
       selectedWeekOffset, nextWeek, prevWeek,
       weekStart, weekDays,
-      todayEvents, breakOpportunities,
+      todayEvents, breakOpportunities, smartBreaks,
       moodOverride, setMoodFromSlider,
       morningMood,
       pendingAiIntervention, clearAiIntervention,

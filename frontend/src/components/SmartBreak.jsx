@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useCalendar } from '../context/CalendarContext'
 
 const SPORT_ICONS = {
   Padel: '🎾', 'Ping Pong': '🏓', Tennis: '🎾', Badminton: '🏸',
@@ -8,20 +9,88 @@ const SPORT_ICONS = {
 
 export default function SmartBreak({ userId, workLocation, userSports = [] }) {
   const navigate = useNavigate()
+  const { smartBreaks, moodScore } = useCalendar()
+
   const [suggestion, setSuggestion] = useState(null)
-  const [loading,    setLoading]    = useState(true)
+  const [loading,    setLoading]    = useState(false)
   const [error,      setError]      = useState(null)
   const [snoozed,    setSnoozed]    = useState(false)
-  const [phase,      setPhase]      = useState('idle')
+  const [phase,      setPhase]      = useState('idle') // 'idle' | 'fetching' | 'active'
   const [selectedSport, setSelectedSport] = useState(null)
+  
+  const [nextBreak, setNextBreak] = useState(null)
+  const lastFiredBreakRef = useRef(null)
 
+  // Monitor clock and trigger AI break when time comes
   useEffect(() => {
-    fetch(`/api/breaks/${userId}`)
-      .then(r => { if (!r.ok) throw new Error('Failed'); return r.json() })
-      .then(d => { setSuggestion(d); setPhase('active') })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [userId])
+    if (!smartBreaks || smartBreaks.length === 0) return
+
+    const tick = () => {
+      if (snoozed || phase !== 'idle') return
+
+      const now = new Date()
+      
+      // Find the upcoming break for display
+      const upcoming = smartBreaks.find(b => new Date(b.time) > now)
+      setNextBreak(upcoming)
+
+      // Find if we are currently INSIDE a break window (within 5 mins after scheduled time)
+      const currentBreak = smartBreaks.find(b => {
+        const bTime = new Date(b.time)
+        const diffMin = (now - bTime) / 60000
+        return diffMin >= 0 && diffMin < 5
+      })
+
+      // If it's break time and we haven't already fired for this specific break slot
+      if (currentBreak && lastFiredBreakRef.current?.getTime() !== currentBreak.time.getTime()) {
+        lastFiredBreakRef.current = currentBreak.time
+        triggerAiBreak(currentBreak)
+      }
+    }
+
+    tick()
+    const intervalId = setInterval(tick, 10000) // check every 10s
+    return () => clearInterval(intervalId)
+  }, [smartBreaks, snoozed, phase])
+
+  const triggerAiBreak = async (breakSlot) => {
+    setPhase('fetching')
+    setLoading(true)
+    setError(null)
+    
+    const payload = {
+      scheduleContext: breakSlot.reason,
+      currentMood: moodScore || 80,
+      timeOfDay: new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' })
+    }
+
+    try {
+      const res = await fetch(`/api/ai/smart-break/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) throw new Error('Ai Break Failed')
+      
+      const data = await res.json()
+      setSuggestion({ ...data, time: payload.timeOfDay })
+      setPhase('active')
+    } catch (e) {
+      console.error(e)
+      setError(e.message)
+      setPhase('idle')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTestTrigger = () => {
+    if (smartBreaks?.length > 0) {
+      triggerAiBreak(smartBreaks[0])
+    } else {
+      triggerAiBreak({ reason: 'Sesiune de test manuală', time: new Date() })
+    }
+  }
 
   const confirmBreak = () => {
     navigate('/pause', { state: { suggestionText: suggestion?.suggestionText } })
@@ -97,9 +166,27 @@ export default function SmartBreak({ userId, workLocation, userSports = [] }) {
       )}
 
       {phase === 'idle' && !snoozed && (
-        <div className="flex flex-col items-center justify-center gap-3 text-center py-4">
-          <span className="text-4xl">🌿</span>
-          <p className="text-slate-400 text-sm">Se încarcă sugestia personalizată…</p>
+        <div className="flex flex-col items-center justify-center gap-3 text-center py-6">
+          <div className="relative">
+            <div className="absolute inset-0 bg-brand/20 blur-xl rounded-full animate-pulse" />
+            <span className="text-4xl relative z-10">⏳</span>
+          </div>
+          <div>
+            <p className="text-slate-300 font-medium text-sm">
+              Următoarea pauză la {nextBreak ? new Date(nextBreak.time).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }) : 'nedefinit'}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">Concentrează-te. Îți trimit o alertă când e timpul!</p>
+          </div>
+          <button onClick={handleTestTrigger} className="text-[10px] uppercase tracking-wider text-slate-600 hover:text-brand transition-colors mt-2">
+            Simulează Acum (Demo)
+          </button>
+        </div>
+      )}
+
+      {phase === 'fetching' && (
+        <div className="flex flex-col items-center justify-center gap-3 text-center py-6">
+          <span className="text-4xl animate-bounce">🤖</span>
+          <p className="text-slate-400 text-sm animate-pulse">Gemini creează o pauză personalizată...</p>
         </div>
       )}
 
