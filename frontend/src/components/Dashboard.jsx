@@ -63,7 +63,7 @@ function ActivityModal({ userId, userName, onClose }) {
     if (!sport || !date) return
     setSubmitting(true)
     try {
-      await fetch(`http://localhost:8080/api/matchmaking/${userId}/activity`, {
+      await fetch(`/api/matchmaking/${userId}/activity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activity: sport, date, userName }),

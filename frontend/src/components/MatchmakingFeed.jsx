@@ -29,7 +29,7 @@ export default function MatchmakingFeed({ userId, userName, compact = false, aut
   const fetchMatches = async (activity) => {
     setLoading(true); setError(null); setHasFetched(false)
     try {
-      const res = await fetch(`http://localhost:8080/api/matchmaking/${userId}?activity=${encodeURIComponent(activity)}`)
+      const res = await fetch(`/api/matchmaking/${userId}?activity=${encodeURIComponent(activity)}`)
       if (!res.ok) throw new Error('Failed to fetch matches')
       setMatches(await res.json())
       setHasFetched(true)

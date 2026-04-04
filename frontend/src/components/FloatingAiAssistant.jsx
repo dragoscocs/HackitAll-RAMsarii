@@ -45,7 +45,7 @@ const FloatingAiAssistant = () => {
         .filter(msg => msg.role !== 'ai' || !msg.content.startsWith('Salut! Sunt asistentul'))
         .slice(-4);
 
-      const response = await fetch('http://localhost:8080/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ history: contextToSend, imageBase64: imageToSend })

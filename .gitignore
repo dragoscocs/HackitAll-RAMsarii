@@ -19,3 +19,6 @@ backend/src/main/resources/application.properties
 
 # H2 database files
 backend/data/
+
+# Local Env
+frontend/.env*

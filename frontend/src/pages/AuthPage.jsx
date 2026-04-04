@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AnimatedForm, EcoOrbitDisplay, BoxReveal } from '../components/ui/SignIn'
 import { useAuth } from '../context/AuthContext'
 
-const API_BASE = 'http://localhost:8080'
+const API_BASE = ''
 
 const SPORTS = [
   { id: 'Padel',     emoji: '🎾', label: 'Padel',     desc: 'Curți disponibile în oraș'   },

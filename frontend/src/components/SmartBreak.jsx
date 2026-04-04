@@ -10,7 +10,7 @@ export default function SmartBreak({ userId }) {
   const [phase,      setPhase]      = useState('idle')
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/breaks/${userId}`)
+    fetch(`/api/breaks/${userId}`)
       .then(r => { if (!r.ok) throw new Error('Failed'); return r.json() })
       .then(d => { setSuggestion(d); setPhase('active') })
       .catch(e => setError(e.message))
