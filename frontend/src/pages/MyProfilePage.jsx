@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, Edit3, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import StatsBarChart from '../components/ui/StatsBarChart'
 
 const SPORTS = [
   { id: 'Padel',     emoji: '🎾', label: 'Padel'     },
@@ -310,24 +311,14 @@ export default function MyProfilePage() {
 
         {/* ── Stats (read-only) ── */}
         <div className="card flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-sky-500/15 flex items-center justify-center text-xs">📊</span>
-            Statistici
-          </h2>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-emerald-400/5 border border-emerald-400/15 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-400">{user?.currentStreak ?? 0}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Zile streak</p>
-            </div>
-            <div className="bg-violet-400/5 border border-violet-400/15 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-violet-400">{user?.matchesThisMonth ?? 0}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Matches luna asta</p>
-            </div>
-            <div className="bg-amber-400/5 border border-amber-400/15 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-amber-400">{user?.breaksTakenToday ?? 0}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Pauze azi</p>
-            </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-sky-500/15 flex items-center justify-center text-xs">📊</span>
+              Statistici
+            </h2>
+            <span className="text-[10px] text-slate-600 font-medium">față de obiectiv lunar</span>
           </div>
+          <StatsBarChart stats={user} />
         </div>
 
         {/* ── Bottom save ── */}
