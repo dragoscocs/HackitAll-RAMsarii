@@ -32,11 +32,14 @@ export default function MyProfilePage() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
   const [saved, setSaved]   = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm]     = useState({
-    name:            user?.name            ?? '',
-    city:            user?.city            ?? 'Bucharest',
-    preferredSports: user?.preferredSports ?? [],
-    workSchedule:    user?.workSchedule    ?? '9-17',
+    name:              user?.name              ?? '',
+    city:              user?.city              ?? 'Bucharest',
+    preferredSports:   user?.preferredSports   ?? [],
+    workSchedule:      user?.workSchedule      ?? '9-17',
+    userPersonaPrompt: user?.userPersonaPrompt ?? '',
+    userHealthLimits:  user?.userHealthLimits  ?? '',
   })
 
   const toggleSport = (sport) => setForm(prev => ({
@@ -46,10 +49,25 @@ export default function MyProfilePage() {
       : [...prev.preferredSports, sport],
   }))
 
-  const handleSave = () => {
-    login({ ...user, ...form })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/users/${user.id || user.userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
+      if (res.ok) {
+        const updatedUser = await res.json()
+        login({ ...user, ...updatedUser })
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2500)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const workLocationLabel = user?.workLocation === 'HOME'
@@ -205,6 +223,38 @@ export default function MyProfilePage() {
           </div>
         </div>
 
+        {/* ── Personalizare AI ── */}
+        <div className="card flex flex-col gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center text-xs">🤖</span>
+              Personalizare AI (SyncFit Coach)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5 ml-8">Setează personalitatea și limitele de sănătate pentru asistentul tău virtual.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tonul Asistentului (Persona)</label>
+              <textarea
+                value={form.userPersonaPrompt}
+                onChange={e => setForm(p => ({ ...p, userPersonaPrompt: e.target.value }))}
+                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand transition-colors placeholder:text-slate-600/70 resize-none h-28"
+                placeholder="Ex: Vorbește cu mine ca un antrenor militar dur, folosește expresii din tabăra de instrucție și încurajează-mă ferm. Sau: Fii foarte blând, Zen și axează-te pe respirație."
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Alergii sau Limite Fizice</label>
+              <textarea
+                value={form.userHealthLimits}
+                onChange={e => setForm(p => ({ ...p, userHealthLimits: e.target.value }))}
+                className="w-full bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500/50 transition-colors placeholder:text-slate-600/70 resize-none h-28"
+                placeholder="Ex: Am dureri frecvente în zona lombară, evită exercițiile care implică aplecări bruște. Sau: Sunt alergic la nuci, nu îmi recomanda gustări care le conțin."
+              />
+            </div>
+          </div>
+        </div>
+
         {/* ── Sports ── */}
         <div className="card flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -268,11 +318,14 @@ export default function MyProfilePage() {
         {/* ── Bottom save ── */}
         <button
           onClick={handleSave}
-          className="w-full py-4 rounded-2xl bg-brand hover:bg-brand-dark text-white font-semibold transition-all duration-200 hover:scale-[1.01] active:scale-99 shadow-lg shadow-brand/25 flex items-center justify-center gap-2 text-sm"
+          disabled={saving}
+          className="w-full py-4 rounded-2xl bg-brand hover:bg-brand-dark text-white font-semibold transition-all duration-200 hover:scale-[1.01] active:scale-99 shadow-lg shadow-brand/25 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saved
-            ? <><Check className="w-4 h-4" /> Profil salvat cu succes!</>
-            : 'Salvează profilul'}
+          {saving 
+            ? 'Se salvează...' 
+            : saved
+              ? <><Check className="w-4 h-4" /> Profil salvat cu succes!</>
+              : 'Salvează profilul'}
         </button>
       </main>
     </div>

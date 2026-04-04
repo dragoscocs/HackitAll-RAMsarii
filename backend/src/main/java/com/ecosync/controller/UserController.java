@@ -59,4 +59,20 @@ public class UserController {
         });
         return ResponseEntity.ok(Map.of("success", true));
     }
+
+    /** Update entire user profile */
+    @PutMapping("/{userId}")
+    public ResponseEntity<User> updateProfile(@PathVariable Long userId, @RequestBody User profileData) {
+        return userRepository.findById(userId).map(user -> {
+            if (profileData.getName() != null) user.setName(profileData.getName());
+            if (profileData.getCity() != null) user.setCity(profileData.getCity());
+            if (profileData.getPreferredSports() != null) user.setPreferredSports(profileData.getPreferredSports());
+            if (profileData.getWorkSchedule() != null) user.setWorkSchedule(profileData.getWorkSchedule());
+            if (profileData.getUserPersonaPrompt() != null) user.setUserPersonaPrompt(profileData.getUserPersonaPrompt());
+            if (profileData.getUserHealthLimits() != null) user.setUserHealthLimits(profileData.getUserHealthLimits());
+            
+            User saved = userRepository.save(user);
+            return ResponseEntity.ok(saved);
+        }).orElse(ResponseEntity.notFound().build());
+    }
 }
