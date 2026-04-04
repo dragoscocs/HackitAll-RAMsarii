@@ -465,8 +465,12 @@ export default function Dashboard() {
 
             <button onClick={() => navigate('/my-profile')}
               className="flex items-center gap-2.5 bg-surface border border-surface-border hover:border-brand/50 rounded-xl px-3 py-2 transition-all duration-200 group">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white shadow">
-                {getInitials(user?.name)}
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-xs font-bold text-white shadow overflow-hidden">
+                {user?.profilePicture ? (
+                  <img src={user.profilePicture} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(user?.name)
+                )}
               </div>
               <div className="hidden sm:block text-left">
                 <p className="text-sm font-medium text-white leading-tight group-hover:text-brand-light transition-colors">{user?.name}</p>

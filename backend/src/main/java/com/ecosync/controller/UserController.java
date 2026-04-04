@@ -75,6 +75,7 @@ public class UserController {
             if (profileData.getWorkSchedule() != null) user.setWorkSchedule(profileData.getWorkSchedule());
             if (profileData.getUserPersonaPrompt() != null) user.setUserPersonaPrompt(profileData.getUserPersonaPrompt());
             if (profileData.getUserHealthLimits() != null) user.setUserHealthLimits(profileData.getUserHealthLimits());
+            if (profileData.getProfilePicture() != null) user.setProfilePicture(profileData.getProfilePicture());
             
             User saved = userRepository.save(user);
             return ResponseEntity.ok(saved);

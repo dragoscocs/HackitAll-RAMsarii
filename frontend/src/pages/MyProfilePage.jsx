@@ -42,6 +42,7 @@ export default function MyProfilePage() {
     workSchedule:      user?.workSchedule      ?? '9-17',
     userPersonaPrompt: user?.userPersonaPrompt ?? '',
     userHealthLimits:  user?.userHealthLimits  ?? '',
+    profilePicture:    user?.profilePicture    ?? '',
   })
 
   const toggleSport = (sport) => setForm(prev => ({
@@ -50,6 +51,17 @@ export default function MyProfilePage() {
       ? prev.preferredSports.filter(s => s !== sport)
       : [...prev.preferredSports, sport],
   }))
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setForm(prev => ({ ...prev, profilePicture: event.target.result }))
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -150,13 +162,25 @@ export default function MyProfilePage() {
       <main className="max-w-3xl mx-auto px-6 py-8 space-y-5 animate-fade-in">
         {/* ── Avatar & identity ── */}
         <div className="card flex items-center gap-5">
-          <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-2xl font-bold text-white shadow-xl shadow-violet-500/20">
-              {getInitials(form.name)}
-            </div>
-            <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-surface-card border border-surface-border flex items-center justify-center">
-              <Edit3 className="w-3.5 h-3.5 text-slate-400" />
-            </div>
+          <div className="relative shrink-0 group">
+            <label className="cursor-pointer block relative">
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleImageUpload}
+              />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-2xl font-bold text-white shadow-xl shadow-violet-500/20 overflow-hidden">
+                {form.profilePicture ? (
+                  <img src={form.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(form.name)
+                )}
+              </div>
+              <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-surface-card border border-brand/50 flex items-center justify-center group-hover:bg-brand/20 transition-colors">
+                <Edit3 className="w-3.5 h-3.5 text-brand" />
+              </div>
+            </label>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-lg font-bold text-white truncate">{form.name || 'Fără nume'}</p>

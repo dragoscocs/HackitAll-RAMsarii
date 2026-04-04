@@ -25,6 +25,8 @@ public class AuthResponse {
     private boolean criptareConsent;
     private boolean anspdcpConsent;
 
+    private String profilePicture;
+
     public AuthResponse(String token, User user) {
         this.token = token;
         this.userId = user.getId();
@@ -41,6 +43,7 @@ public class AuthResponse {
         this.gdprConsent     = user.isGdprConsent();
         this.criptareConsent = user.isCriptareConsent();
         this.anspdcpConsent  = user.isAnspdcpConsent();
+        this.profilePicture  = user.getProfilePicture();
     }
 
     public String getWorkSchedule()  { return workSchedule; }
@@ -63,6 +66,8 @@ public class AuthResponse {
     public int getBreaksTakenToday() { return breaksTakenToday; }
     public int getCurrentStreak() { return currentStreak; }
     public int getMatchesThisMonth() { return matchesThisMonth; }
+    
+    public String getProfilePicture() { return profilePicture; }
 
     public boolean isGdprConsent() { return gdprConsent; }
     public boolean isCriptareConsent() { return criptareConsent; }

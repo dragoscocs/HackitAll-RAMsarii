@@ -56,6 +56,9 @@ public class User {
     private boolean criptareConsent = false;
     private boolean anspdcpConsent = false;
 
+    @Column(columnDefinition = "LONGTEXT")
+    private String profilePicture;
+
     public User() {}
 
     public User(String name, String email, String password, String city, List<String> preferredSports) {
@@ -128,4 +131,7 @@ public class User {
 
     public boolean isAnspdcpConsent() { return anspdcpConsent; }
     public void setAnspdcpConsent(boolean anspdcpConsent) { this.anspdcpConsent = anspdcpConsent; }
+
+    public String getProfilePicture() { return profilePicture; }
+    public void setProfilePicture(String profilePicture) { this.profilePicture = profilePicture; }
 }
