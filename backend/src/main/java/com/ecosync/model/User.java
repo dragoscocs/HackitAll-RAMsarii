@@ -39,6 +39,12 @@ public class User {
     private LocalDate lastBreakDate;      // last day user took a break (for streak)
     private String workSchedule;
 
+    @Column(columnDefinition = "TEXT")
+    private String userPersonaPrompt;
+
+    @Column(columnDefinition = "TEXT")
+    private String userHealthLimits;
+
     public User() {}
 
     public User(String name, String email, String password, String city, List<String> preferredSports) {
@@ -90,4 +96,10 @@ public class User {
 
     public String getWorkSchedule() { return workSchedule; }
     public void setWorkSchedule(String workSchedule) { this.workSchedule = workSchedule; }
+
+    public String getUserPersonaPrompt() { return userPersonaPrompt; }
+    public void setUserPersonaPrompt(String userPersonaPrompt) { this.userPersonaPrompt = userPersonaPrompt; }
+
+    public String getUserHealthLimits() { return userHealthLimits; }
+    public void setUserHealthLimits(String userHealthLimits) { this.userHealthLimits = userHealthLimits; }
 }

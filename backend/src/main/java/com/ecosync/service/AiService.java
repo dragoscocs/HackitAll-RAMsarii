@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import com.ecosync.model.User;
+import com.ecosync.model.SmartBreakRequest;
+import com.ecosync.model.SmartBreakResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -112,13 +115,21 @@ public class AiService {
     }
 
     private String callGeminiApi(String prompt) {
-        Map<String, Object> requestBody = Map.of(
-                "contents", new Object[]{
-                        Map.of("parts", new Object[]{
-                                Map.of("text", prompt)
-                        })
-                }
-        );
+        return callGeminiApi(prompt, null);
+    }
+
+    private String callGeminiApi(String prompt, Map<String, Object> generationConfig) {
+        Map<String, Object> requestBody;
+        if (generationConfig != null) {
+            requestBody = Map.of(
+                    "contents", new Object[]{ Map.of("parts", new Object[]{ Map.of("text", prompt) }) },
+                    "generationConfig", generationConfig
+            );
+        } else {
+            requestBody = Map.of(
+                    "contents", new Object[]{ Map.of("parts", new Object[]{ Map.of("text", prompt) }) }
+            );
+        }
 
         return webClient.post()
                 .uri(geminiApiUrl + "?key=" + geminiApiKey)
@@ -127,6 +138,64 @@ public class AiService {
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
+    }
+
+    public SmartBreakResponse generateSmartBreak(User user, SmartBreakRequest request) {
+        if (geminiApiKey == null || geminiApiKey.isEmpty()) {
+            return new SmartBreakResponse("Pauză de Apă", "Timp pentru un pahar cu apă rece. Relaxează-te un minut!", 2, "hydrate");
+        }
+
+        String persona = (user.getUserPersonaPrompt() != null && !user.getUserPersonaPrompt().isBlank())
+            ? user.getUserPersonaPrompt()
+            : "Ești un antrenor de wellbeing empatic și profesionist.";
+
+        String healthLimits = (user.getUserHealthLimits() != null && !user.getUserHealthLimits().isBlank())
+            ? user.getUserHealthLimits()
+            : "Nicio limitare fizică menționată.";
+
+        String preferredSports = (user.getPreferredSports() != null && !user.getPreferredSports().isEmpty())
+            ? String.join(", ", user.getPreferredSports())
+            : "Niciun sport preferat setat.";
+
+        String prompt = String.format(
+            "SYSTEM INSTRUCTION:\\n" +
+            "You are generating a highly personalized short break for a user working at a desk.\\n" +
+            "TONE/PERSONA (CRITICAL): %s\\n" +
+            "HEALTH LIMITS (ABSOLUTE BOUNDARY, NEVER VIOLATE): %s\\n" +
+            "FAVORITE SPORTS (Try to relate the break to these if possible): %s\\n\\n" +
+            "DYNAMIC CONTEXT:\\n" +
+            "- Current Mood (1=exhausted, 5=energetic): %d\\n" +
+            "- Schedule Context: %s\\n" +
+            "- Local Time: %s\\n\\n" +
+            "TASK: Generate a break recommendation that perfectly matches the persona's tone, fits their energy level (%d), accommodates their schedule context, and strictly respects their health limits.\\n" +
+            "Return the output STRICTLY in Romanian (description_ro) using the exact JSON schema requested.",
+            persona, healthLimits, preferredSports, request.currentMood(), request.scheduleContext(), request.timeOfDay(), request.currentMood()
+        );
+
+        Map<String, Object> schema = Map.of(
+            "type", "object",
+            "properties", Map.of(
+                "break_title", Map.of("type", "string"),
+                "description_ro", Map.of("type", "string"),
+                "duration_minutes", Map.of("type", "integer"),
+                "activity_type", Map.of("type", "string", "enum", List.of("stretch", "hydrate", "breathe", "walk", "mindfulness"))
+            ),
+            "required", List.of("break_title", "description_ro", "duration_minutes", "activity_type")
+        );
+
+        Map<String, Object> generationConfig = Map.of(
+            "responseMimeType", "application/json",
+            "responseSchema", schema
+        );
+
+        try {
+            String rawResponse = callGeminiApi(prompt, generationConfig);
+            String jsonText = extractAndCleanJson(rawResponse);
+            return objectMapper.readValue(jsonText, SmartBreakResponse.class);
+        } catch (Exception e) {
+            System.err.println("[SmartBreak Error]: " + e.getMessage());
+            return new SmartBreakResponse("Respiră Adânc", "Ia o mică pauză și respiră de 10 ori adânc pentru a te deconecta.", 3, "breathe");
+        }
     }
 
     /**
