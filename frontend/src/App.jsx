@@ -1,7 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CalendarProvider } from './context/CalendarContext'
+import { PrivacyProvider } from './context/PrivacyContext'
 import LegalFooter from './components/LegalFooter'
+import ScrollToTop from './components/ScrollToTop'
+import CookieConsent from './components/CookieConsent'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './components/Dashboard'
 import PausePage from './pages/PausePage'
@@ -38,17 +41,21 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CalendarProvider>
-        <BrowserRouter>
-          <div className="flex flex-col min-h-screen bg-surface">
-            <div className="flex-1 flex flex-col">
-              <AppRoutes />
+    <PrivacyProvider>
+      <AuthProvider>
+        <CalendarProvider>
+          <BrowserRouter>
+            <ScrollToTop />
+            <div className="flex flex-col min-h-screen bg-surface">
+              <div className="flex-1 flex flex-col">
+                <AppRoutes />
+              </div>
+              <LegalFooter />
             </div>
-            <LegalFooter />
-          </div>
-        </BrowserRouter>
-      </CalendarProvider>
-    </AuthProvider>
+            <CookieConsent />
+          </BrowserRouter>
+        </CalendarProvider>
+      </AuthProvider>
+    </PrivacyProvider>
   )
 }

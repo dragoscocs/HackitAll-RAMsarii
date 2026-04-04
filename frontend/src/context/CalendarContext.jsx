@@ -127,7 +127,7 @@ function calcSmartBreaks(todayEvts, workSchedule = '9-17') {
   const resultBreaks = []
   const today = new Date()
   
-  const [startH, endH] = workSchedule.split('-').map(Number)
+  const [startH, endH] = (workSchedule ?? '9-17').split('-').map(Number)
   const workStart = new Date(today); workStart.setHours(startH, 0, 0, 0)
   const workEnd   = new Date(today); workEnd.setHours(endH, 0, 0, 0)
   
