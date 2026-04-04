@@ -225,7 +225,7 @@ export const EcoOrbitDisplay = memo(function EcoOrbitDisplay() {
       {/* Center logo */}
       <div className="relative z-10 flex flex-col items-center gap-2">
         <div className="w-32 h-32 flex items-center justify-center mb-[-0.5rem]">
-          <img src="/logo.png" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-2xl" />
+          <img src="/logo.png?v=2" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-2xl" />
         </div>
         <span className="text-2xl font-bold text-white tracking-tight">SyncFit</span>
         <span className="text-xs text-slate-400 text-center max-w-[160px]">

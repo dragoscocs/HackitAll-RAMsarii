@@ -203,7 +203,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/logo.png" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-md" />
+              <img src="/logo.png?v=2" alt="SyncFit Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <div>
               <h1 className="text-base font-bold text-white tracking-tight">SyncFit</h1>
