@@ -10,7 +10,7 @@ import java.util.Map;
 @Service
 public class AiService {
 
-    @Value("${gemini.api.key}")
+    @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
     @Value("${gemini.api.url}")
@@ -22,23 +22,9 @@ public class AiService {
         this.webClient = webClientBuilder.build();
     }
 
-    /**
-     * Entry point for all AI recommendations.
-     * Currently returns a hardcoded mock response that simulates an LLM output.
-     *
-     * TODO: Replace the mock block below with the real Gemini HTTP call
-     *       (the live implementation is already wired via callGeminiApi).
-     */
     public String getAiRecommendation(String prompt) {
         return getMockAiResponse(prompt);
-
-        // Uncomment the line below (and remove the one above) to use the real Gemini API:
-        // return callGeminiApi(prompt);
     }
-
-    // ---------------------------------------------------------------------------
-    // Mock implementation — simulates LLM cross-sport matchmaking logic
-    // ---------------------------------------------------------------------------
 
     private String getMockAiResponse(String prompt) {
         if (prompt.toLowerCase().contains("padel")) {
@@ -96,10 +82,6 @@ public class AiService {
                 }
                 """;
     }
-
-    // ---------------------------------------------------------------------------
-    // Real Gemini API implementation — swap in when ready
-    // ---------------------------------------------------------------------------
 
     private String callGeminiApi(String prompt) {
         Map<String, Object> requestBody = Map.of(

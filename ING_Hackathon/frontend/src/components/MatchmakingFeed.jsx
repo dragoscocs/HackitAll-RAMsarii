@@ -36,6 +36,7 @@ export default function MatchmakingFeed({ userId }) {
       setMatches(data)
       setHasFetched(true)
     } catch (err) {
+      console.error("Fetch error:", err);
       setError(err.message)
     } finally {
       setLoading(false)

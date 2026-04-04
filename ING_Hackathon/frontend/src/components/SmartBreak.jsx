@@ -12,17 +12,21 @@ export default function SmartBreak({ userId }) {
   const timerRef                        = useRef(null)
 
   useEffect(() => {
-    fetch(`http://localhost:8080/api/breaks/${userId}`)
-      .then(res => {
+    const fetchBreak = async () => {
+      try {
+        const res = await fetch(`http://localhost:8080/api/breaks/${userId}`)
         if (!res.ok) throw new Error('Failed to fetch break suggestion')
-        return res.json()
-      })
-      .then(data => {
+        const data = await res.json()
         setSuggestion(data)
         setPhase('active')
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setError(error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBreak()
   }, [userId])
 
   const startCountdown = () => {
