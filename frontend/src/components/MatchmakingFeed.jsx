@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
 
 const MOCK_REQUESTS = [
-  { id: 1, name: 'Andrei Popescu',  activity: 'Padel',     avatar: 'AP', time: '12:30', color: 'from-violet-500 to-purple-700' },
-  { id: 2, name: 'Ioana Ionescu',   activity: 'Ping Pong', avatar: 'II', time: '13:00', color: 'from-sky-500 to-blue-700' },
-  { id: 3, name: 'Elena Stancu',    activity: 'Badminton', avatar: 'ES', time: '14:00', color: 'from-emerald-500 to-teal-700' },
+  { id: 1, name: 'Andrei Popescu', activity: 'Padel',     avatar: 'AP', time: '12:30', color: 'from-violet-500 to-purple-700' },
+  { id: 2, name: 'Ioana Ionescu',  activity: 'Ping Pong', avatar: 'II', time: '13:00', color: 'from-sky-500 to-blue-700'     },
+  { id: 3, name: 'Elena Stancu',   activity: 'Badminton', avatar: 'ES', time: '14:00', color: 'from-emerald-500 to-teal-700' },
 ]
 
 export const SPORT_ICONS = {
@@ -12,24 +12,24 @@ export const SPORT_ICONS = {
   Football: '⚽', Yoga: '🧘', Cycling: '🚴', Ski: '⛷️', Running: '🏃',
 }
 
-const SPORTS_LIST = ['Padel', 'Tennis', 'Ping Pong', 'Badminton', 'Football', 'Yoga', 'Cycling', 'Ski', 'Running']
+export const SPORTS_LIST = ['Padel', 'Tennis', 'Ping Pong', 'Badminton', 'Football', 'Yoga', 'Cycling', 'Ski', 'Running']
 
-export default function MatchmakingFeed({ userId, userName, compact = false }) {
-  const [selected, setSelected]         = useState(MOCK_REQUESTS[0])
-  const [requests, setRequests]         = useState(MOCK_REQUESTS)
-  const [matches, setMatches]           = useState([])
-  const [loading, setLoading]           = useState(false)
-  const [error, setError]               = useState(null)
-  const [hasFetched, setHasFetched]     = useState(false)
+export default function MatchmakingFeed({ userId, userName, compact = false, autoSearch = null }) {
+  const [selected,     setSelected]     = useState(MOCK_REQUESTS[0])
+  const [requests,     setRequests]     = useState(MOCK_REQUESTS)
+  const [matches,      setMatches]      = useState([])
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState(null)
+  const [hasFetched,   setHasFetched]   = useState(false)
   const [showPostForm, setShowPostForm] = useState(false)
-  const [newActivity, setNewActivity]   = useState('')
-  const [newTime, setNewTime]           = useState('18:00')
-  const [postSuccess, setPostSuccess]   = useState(false)
+  const [newActivity,  setNewActivity]  = useState('')
+  const [newTime,      setNewTime]      = useState('18:00')
+  const [postSuccess,  setPostSuccess]  = useState(false)
 
-  const findMatches = async () => {
+  const fetchMatches = async (activity) => {
     setLoading(true); setError(null); setHasFetched(false)
     try {
-      const res = await fetch(`http://localhost:8080/api/matchmaking/${userId}?activity=${encodeURIComponent(selected.activity)}`)
+      const res = await fetch(`http://localhost:8080/api/matchmaking/${userId}?activity=${encodeURIComponent(activity)}`)
       if (!res.ok) throw new Error('Failed to fetch matches')
       setMatches(await res.json())
       setHasFetched(true)
@@ -40,10 +40,21 @@ export default function MatchmakingFeed({ userId, userName, compact = false }) {
     }
   }
 
+  // Triggered externally from the Hero "Find Partners" button
+  useEffect(() => {
+    if (!autoSearch?.sport || autoSearch.key === 0) return
+    fetchMatches(autoSearch.sport)
+  }, [autoSearch?.key])
+
+  const findMatches = () => fetchMatches(selected.activity)
+
   const handlePost = () => {
     if (!newActivity) return
     const initials = (userName ?? 'Eu').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-    const newReq = { id: Date.now(), name: userName ?? 'Tu', activity: newActivity, avatar: initials, time: newTime, color: 'from-brand to-brand-dark' }
+    const newReq = {
+      id: Date.now(), name: userName ?? 'Tu', activity: newActivity,
+      avatar: initials, time: newTime, color: 'from-brand to-brand-dark',
+    }
     setRequests(prev => [newReq, ...prev])
     setSelected(newReq)
     setShowPostForm(false)
@@ -51,6 +62,10 @@ export default function MatchmakingFeed({ userId, userName, compact = false }) {
     setPostSuccess(true)
     setTimeout(() => setPostSuccess(false), 3000)
   }
+
+  const activeLabel = autoSearch?.sport && autoSearch.key > 0
+    ? `${SPORT_ICONS[autoSearch.sport] ?? '🏅'} Sporturile tale · ${autoSearch.sport}`
+    : `${SPORT_ICONS[selected.activity] ?? '🏅'} ${selected.activity}`
 
   return (
     <div className="card flex flex-col gap-5 h-full">
@@ -64,8 +79,10 @@ export default function MatchmakingFeed({ userId, userName, compact = false }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="badge bg-brand/10 text-brand-light">✨ AI</span>
-          <button onClick={() => { setShowPostForm(v => !v); setPostSuccess(false) }}
-            className="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/20 border border-brand/20 flex items-center justify-center text-brand-light transition-colors">
+          <button
+            onClick={() => { setShowPostForm(v => !v); setPostSuccess(false) }}
+            className="w-8 h-8 rounded-lg bg-brand/10 hover:bg-brand/20 border border-brand/20 flex items-center justify-center text-brand-light transition-colors"
+          >
             {showPostForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
           </button>
         </div>
@@ -81,7 +98,7 @@ export default function MatchmakingFeed({ userId, userName, compact = false }) {
               {SPORTS_LIST.map(s => <option key={s} value={s}>{SPORT_ICONS[s] || '🏅'} {s}</option>)}
             </select>
             <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)}
-              className="w-24 bg-zinc-800 border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand" />
+              className="w-24 bg-zinc-800 border border-surface-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand [color-scheme:dark]" />
           </div>
           <button onClick={handlePost} disabled={!newActivity}
             className="btn-primary text-sm py-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -129,12 +146,14 @@ export default function MatchmakingFeed({ userId, userName, compact = false }) {
           : <>🔍 Găsește colegi pentru {selected.activity}</>}
       </button>
 
-      {error && <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl p-3">⚠️ {error}</div>}
+      {error && (
+        <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl p-3">⚠️ {error}</div>
+      )}
 
       {hasFetched && (
         <div className="animate-slide-up">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
-            Top compatibili · {selected.activity} {SPORT_ICONS[selected.activity]}
+            Top compatibili · {activeLabel}
           </p>
           {matches.length === 0
             ? <p className="text-sm text-slate-400 text-center py-6">Niciun match găsit.</p>
@@ -147,8 +166,8 @@ export default function MatchmakingFeed({ userId, userName, compact = false }) {
 
 function MatchCard({ match, rank }) {
   const scorePercent = Math.round(match.matchScore * 100)
-  const scoreColor = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
-  const initials = match.matchedEmployeeName.split(' ').map(w => w[0]).join('').slice(0, 2)
+  const scoreColor   = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
+  const initials     = match.matchedEmployeeName.split(' ').map(w => w[0]).join('').slice(0, 2)
   return (
     <div className="bg-surface border border-surface-border rounded-xl p-4 hover:border-brand/30 transition-colors duration-200">
       <div className="flex items-start gap-3">
