@@ -25,6 +25,17 @@ public class AiService {
         this.webClient = webClientBuilder.build();
     }
 
+    public String getChatReply(String userMessage) {
+        String fullPrompt = "Ești EcoSync, un asistent de wellbeing corporate prietenos. Răspunde scurt, la obiect, în maxim 2-3 propoziții la următoarea întrebare: " + userMessage;
+        try {
+            String rawResponse = callGeminiApi(fullPrompt);
+            return extractAndCleanJson(rawResponse);
+        } catch (Exception e) {
+            System.err.println("[ChatError] " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            return "Ne pare rău, nu pot răspunde acum. Încearcă din nou!";
+        }
+    }
+
     public String getAiRecommendation(String prompt) {
         if (geminiApiKey != null && !geminiApiKey.isEmpty()) {
             try {

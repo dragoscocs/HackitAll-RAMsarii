@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import SmartBreak from './SmartBreak'
 import MatchmakingFeed from './MatchmakingFeed'
+import FloatingAiAssistant from './FloatingAiAssistant'
 import { useAuth } from '../context/AuthContext'
 
 function getGreeting() {
@@ -108,6 +109,8 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      <FloatingAiAssistant />
     </div>
   )
 }
