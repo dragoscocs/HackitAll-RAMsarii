@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, Coffee, Leaf,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useCalendar, MEETING_TYPES_MAP } from '../context/CalendarContext'
+import { useCalendar, MEETING_TYPES_MAP, calcSmartBreaks } from '../context/CalendarContext'
 
 /* ── Constants ────────────────────────────────────────────────── */
 const DAY_START_H = 8
@@ -63,7 +63,7 @@ function loadColor(totalMin) {
 }
 
 /* ── Teams-style Week Calendar ────────────────────────────────── */
-function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
+function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, nextBreakToday }) {
   const now        = new Date()
   const gridRef    = useRef(null)
   const currentH   = now.getHours()
@@ -72,8 +72,6 @@ function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
   const isWorking  = currentH >= DAY_START_H && currentH < DAY_END_H
   const [highlightPulse, setHighlightPulse] = useState(false)
 
-  const breakHours    = breakSchedule?.scheduledBreakHours ?? []
-  const nextBreakH    = breakSchedule?.nextBreakHour
   const currentHDecimal = currentH + currentM / 60
 
   // Scroll to current time on mount and handle highlight event
@@ -146,9 +144,21 @@ function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
           {/* Day columns */}
           {weekDays.map((day, dayIdx) => {
             const isToday = isSameDay(day, now)
+            const isPastDay = day < new Date(now.setHours(0,0,0,0))
+            
             const dayEvents = events
               .filter(ev => isSameDay(new Date(ev.start), day))
               .sort((a, b) => new Date(a.start) - new Date(b.start))
+              
+            const rawBreaks = calcSmartBreaks(dayEvents, workSchedule, day)
+            
+            // Adjust break times to map correctly to this specific day's visual position
+            // (calcSmartBreaks normally attaches the current day context to the Date object)
+            const scheduledBreaks = rawBreaks.map(b => {
+              const adjustedTime = new Date(day)
+              adjustedTime.setHours(b.time.getHours(), b.time.getMinutes(), 0, 0)
+              return { ...b, time: adjustedTime }
+            })
 
             return (
               <div
@@ -203,17 +213,27 @@ function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
                   )
                 })}
 
-                {/* AI Break blocks (today only) */}
-                {isToday && breakHours.map(h => {
-                  const isPast = h + 0.25 < currentHDecimal
-                  const isNext = h === nextBreakH
-                  const top    = timeToPx(h)
+                {/* AI Break blocks (All Days) */}
+                {scheduledBreaks.map((brk, idx) => {
+                  const h = brk.time.getHours()
+                  const m = brk.time.getMinutes()
+                  const breakHDecimal = h + m / 60
+                  
+                  // A break is past if it's on a past day, or earlier today
+                  const isPast = isPastDay || (isToday && breakHDecimal + 0.25 < currentHDecimal)
+                  
+                  // Only pulse "Next Break" if it's today
+                  const isNext = isToday && nextBreakToday && 
+                                 h === nextBreakToday.time.getHours() && 
+                                 m === nextBreakToday.time.getMinutes()
+                  
+                  const top    = timeToPx(h, m)
                   const height = Math.max(22, durationToPx(15))
 
                   return (
                     <div
-                      key={`break-${h}`}
-                      title={`Pauză AI — ${String(h).padStart(2,'0')}:00 (15 min)`}
+                      key={`break-${idx}`}
+                      title={`Pauză AI: ${brk.reason} — ${fmtTime(brk.time)} (15 min)`}
                       className={`absolute inset-x-0.5 rounded-md border px-1.5 overflow-hidden z-20 transition-all ${
                         isPast
                           ? 'opacity-30 bg-emerald-500/10 border-emerald-500/15'
@@ -276,7 +296,7 @@ function TeamsWeekCalendar({ weekDays, events, breakSchedule, isCurrentWeek }) {
 }
 
 /* ── AI Break Schedule Card ───────────────────────────────────── */
-function AiBreakScheduleCard({ schedule, loading, error }) {
+function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule }) {
   const now            = new Date()
   const currentHDec    = now.getHours() + now.getMinutes() / 60
   const isWeekend      = now.getDay() === 0 || now.getDay() === 6
@@ -291,26 +311,10 @@ function AiBreakScheduleCard({ schedule, loading, error }) {
     </div>
   )
 
-  if (loading) return (
-    <div className="rounded-2xl border border-surface-border bg-surface-card p-4 animate-pulse">
-      <div className="h-4 w-28 bg-surface-border/50 rounded mb-3" />
-      <div className="flex gap-2">
-        {[1,2,3,4].map(i => <div key={i} className="h-7 flex-1 bg-surface-border/30 rounded-xl" />)}
-      </div>
-    </div>
-  )
-
-  if (error || !schedule) return (
-    <div className="rounded-2xl border border-surface-border bg-surface-card p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <Leaf className="w-4 h-4 text-slate-600" />
-        <h3 className="text-sm font-semibold text-slate-400">Pauze AI</h3>
-      </div>
-      <p className="text-xs text-slate-600">Indisponibil momentan.</p>
-    </div>
-  )
-
-  const { scheduledBreakHours = [], nextBreakHour, workStartHour = 8, workEndHour = 17, meetings = [] } = schedule
+  const scheduleStr = workSchedule || '9-17'
+  const [startH, endH] = scheduleStr.split('-').map(Number)
+  const workStartHour = startH
+  const workEndHour = endH
   const totalHours = workEndHour - workStartHour
 
   return (
@@ -327,15 +331,18 @@ function AiBreakScheduleCard({ schedule, loading, error }) {
         </span>
       </div>
 
-      {scheduledBreakHours.length === 0 ? (
+      {scheduledBreaks.length === 0 ? (
         <p className="text-xs text-slate-500">Nicio pauză programată azi.</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
-          {scheduledBreakHours.map(h => {
-            const isPast = h + 0.25 < currentHDec
-            const isNext = h === nextBreakHour
+          {scheduledBreaks.map((brk, idx) => {
+            const h = brk.time.getHours()
+            const m = brk.time.getMinutes()
+            const breakH = h + m / 60
+            const isPast = breakH + 0.25 < currentHDec
+            const isNext = nextBreak && h === nextBreak.time.getHours() && m === nextBreak.time.getMinutes()
             return (
-              <div key={h} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold border transition-all select-none ${
+              <div key={idx} title={brk.reason} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold border transition-all select-none cursor-help ${
                 isNext
                   ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/25'
                   : isPast
@@ -343,7 +350,7 @@ function AiBreakScheduleCard({ schedule, loading, error }) {
                   : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
               }`}>
                 {isNext && <span className="animate-pulse text-[8px] mr-0.5">⚡</span>}
-                {String(h).padStart(2,'0')}:00
+                {fmtTime(brk.time)}
               </div>
             )
           })}
@@ -351,23 +358,18 @@ function AiBreakScheduleCard({ schedule, loading, error }) {
       )}
 
       {/* Compact horizontal timeline bar */}
-      {scheduledBreakHours.length > 0 && totalHours > 0 && (
+      {scheduledBreaks.length > 0 && totalHours > 0 && (
         <div className="flex flex-col gap-1">
           <div className="relative h-2.5 bg-surface-border/25 rounded-full overflow-hidden">
-            {meetings.map((m, i) => {
-              const left  = Math.max(0, ((m.startHour - workStartHour) / totalHours) * 100)
-              const width = Math.max(1, ((m.endHour   - m.startHour)  / totalHours) * 100)
+            {scheduledBreaks.map((brk, idx) => {
+              const h = brk.time.getHours()
+              const m = brk.time.getMinutes()
+              const breakH = h + m / 60
+              const isPast = breakH + 0.25 < currentHDec
+              const isNext = nextBreak && h === nextBreak.time.getHours() && m === nextBreak.time.getMinutes()
+              const left   = ((breakH - workStartHour) / totalHours) * 100
               return (
-                <div key={i} className="absolute h-full bg-rose-500/50 rounded-sm"
-                  style={{ left: `${left}%`, width: `${width}%` }} />
-              )
-            })}
-            {scheduledBreakHours.map(h => {
-              const isPast = h + 0.25 < currentHDec
-              const isNext = h === nextBreakHour
-              const left   = ((h - workStartHour) / totalHours) * 100
-              return (
-                <div key={h}
+                <div key={`timeline-${idx}`}
                   className={`absolute h-full w-2 -translate-x-1/2 rounded-sm ${
                     isPast ? 'bg-slate-600' :
                     isNext ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.9)]' :
@@ -635,30 +637,19 @@ export default function ProgramPage() {
     moodScore, moodFactors, moodLabel, moodReco,
     selectedWeekOffset, nextWeek, prevWeek,
     weekStart, weekDays,
-    todayEvents, breakOpportunities,
+    todayEvents, breakOpportunities, smartBreaks
   } = useCalendar()
 
   const today = new Date()
-
-  /* Fetch break schedule once (and poll every 60s) */
-  const [breakSchedule, setBreakSchedule] = useState(null)
-  const [schedLoading,  setSchedLoading]  = useState(true)
-  const [schedError,    setSchedError]    = useState(null)
-
-  useEffect(() => {
-    if (!user?.userId) { setSchedLoading(false); return }
-
-    const fetchSchedule = () =>
-      fetch(`/api/breaks/${user.userId}/schedule`)
-        .then(r => { if (!r.ok) throw new Error('unavailable'); return r.json() })
-        .then(d => { setBreakSchedule(d); setSchedError(null) })
-        .catch(e => setSchedError(e.message))
-        .finally(() => setSchedLoading(false))
-
-    fetchSchedule()
-    const interval = setInterval(fetchSchedule, 60_000) // live refresh every minute
-    return () => clearInterval(interval)
-  }, [user?.userId])
+  
+  // Calculate the "Next Break" for today dynamically
+  const nextBreakToday = useMemo(() => {
+    const currentHDecimal = today.getHours() + today.getMinutes() / 60;
+    return smartBreaks.find(b => {
+      const breakHDecimal = b.time.getHours() + b.time.getMinutes() / 60;
+      return breakHDecimal + 0.25 >= currentHDecimal;
+    })
+  }, [smartBreaks])
 
   /* baseMonday for heatmap */
   const baseMonday = useMemo(() => {
@@ -800,8 +791,9 @@ export default function ProgramPage() {
           <TeamsWeekCalendar
             weekDays={weekDays}
             events={events}
-            breakSchedule={isCurrentWeek ? breakSchedule : null}
+            workSchedule={user?.workSchedule}
             isCurrentWeek={isCurrentWeek}
+            nextBreakToday={nextBreakToday}
           />
         </div>
 
@@ -818,9 +810,9 @@ export default function ProgramPage() {
 
           {/* AI Break schedule */}
           <AiBreakScheduleCard
-            schedule={breakSchedule}
-            loading={schedLoading}
-            error={schedError}
+            scheduledBreaks={smartBreaks}
+            nextBreak={nextBreakToday}
+            workSchedule={user?.workSchedule}
           />
 
           {/* Free break windows */}

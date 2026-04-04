@@ -123,14 +123,13 @@ function calcBreakOpportunities(todayEvts) {
   return slots
 }
 
-function calcSmartBreaks(todayEvts, workSchedule) {
+export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date()) {
   const scheduleStr = workSchedule || '9-17'
   const resultBreaks = []
-  const today = new Date()
 
   const [startH, endH] = scheduleStr.split('-').map(Number)
-  const workStart = new Date(today); workStart.setHours(startH, 0, 0, 0)
-  const workEnd = new Date(today); workEnd.setHours(endH, 0, 0, 0)
+  const workStart = new Date(dateContext); workStart.setHours(startH, 0, 0, 0)
+  const workEnd = new Date(dateContext); workEnd.setHours(endH, 0, 0, 0)
 
   const bufferStart = new Date(workStart.getTime() + 60 * 60 * 1000)
   const bufferEnd = new Date(workEnd.getTime() - 60 * 60 * 1000)
@@ -203,7 +202,8 @@ function calcSmartBreaks(todayEvts, workSchedule) {
   // A simple linear pass logic using 45 minute steps inside valid free slots
   for (let slot of freeSlots) {
     let slotCursor = new Date(slot.start.getTime() + 5 * 60000); // Start 5 mins into the free slot
-    while (slotCursor < new Date(slot.end.getTime() - 5 * 60000) && neededRegularBreaks > 0) {
+    // The break is 15 min long. Ensure it ends before the free slot ends.
+    while (slotCursor <= new Date(slot.end.getTime() - 15 * 60000) && neededRegularBreaks > 0) {
       if (isValidGap(slotCursor)) {
         resultBreaks.push({
           type: 'REGULAR',
@@ -270,7 +270,7 @@ export function CalendarProvider({ children }) {
   const breakOpportunities = useMemo(() => calcBreakOpportunities(todayEvents), [todayEvents])
   const smartBreaks = useMemo(() => {
     const user = JSON.parse(localStorage.getItem('syncfit_user') || '{}')
-    return calcSmartBreaks(todayEvents, user.workSchedule)
+    return calcSmartBreaks(todayEvents, user.workSchedule, new Date())
   }, [todayEvents])
 
   const moodScore = useMemo(() => calcMoodScore(todayEvents, breaksToday), [todayEvents, breaksToday])
