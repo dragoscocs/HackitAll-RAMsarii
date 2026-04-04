@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CalendarProvider } from './context/CalendarContext'
 import { PrivacyProvider } from './context/PrivacyContext'
+import { SportLobbyProvider } from './context/SportLobbyContext'
 import LegalFooter from './components/LegalFooter'
 import ScrollToTop from './components/ScrollToTop'
 import CookieConsent from './components/CookieConsent'
@@ -11,6 +12,7 @@ import PausePage from './pages/PausePage'
 import ProgramPage from './pages/ProgramPage'
 import MyProfilePage from './pages/MyProfilePage'
 import MatchesPage from './pages/MatchesPage'
+import SportPage from './pages/SportPage'
 import LegalDocumentPage from './pages/LegalDocumentPage'
 
 function ProtectedRoute({ children }) {
@@ -32,6 +34,7 @@ function AppRoutes() {
       <Route path="/program"    element={<ProtectedRoute><ProgramPage /></ProtectedRoute>} />
       <Route path="/my-profile" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
       <Route path="/matches"    element={<ProtectedRoute><MatchesPage /></ProtectedRoute>} />
+      <Route path="/sport/:sport" element={<ProtectedRoute><SportPage /></ProtectedRoute>} />
       <Route path="/legal/:docId" element={<LegalDocumentPage />} />
       <Route path="/"           element={<Navigate to="/dashboard" replace />} />
       <Route path="*"           element={<Navigate to="/dashboard" replace />} />
@@ -44,6 +47,7 @@ export default function App() {
     <PrivacyProvider>
       <AuthProvider>
         <CalendarProvider>
+          <SportLobbyProvider>
           <BrowserRouter>
             <ScrollToTop />
             <div className="flex flex-col min-h-screen bg-surface">
@@ -54,6 +58,7 @@ export default function App() {
             </div>
             <CookieConsent />
           </BrowserRouter>
+          </SportLobbyProvider>
         </CalendarProvider>
       </AuthProvider>
     </PrivacyProvider>
