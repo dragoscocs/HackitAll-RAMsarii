@@ -16,3 +16,6 @@ Thumbs.db
 
 # IMPORTANT: Gemini API key — never commit this!
 backend/src/main/resources/application.properties
+
+# H2 database files
+backend/data/
