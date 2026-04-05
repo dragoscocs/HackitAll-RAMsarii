@@ -23,13 +23,6 @@ const CITIES = [
   'Arad', 'Pitești', 'Sibiu', 'Satu Mare', 'Drobeta Turnu Severin',
 ]
 
-// Maps workSchedule button id → [workStartHour, workEndHour]
-const WORK_SCHEDULE_MAP = {
-  '8-16':     [8,  16],
-  '9-17':     [9,  17],
-  '10-18':    [10, 18],
-  'flexible': [9,  18],
-}
 
 export default function AuthPage() {
   const [mode, setMode] = useState('login') // 'login' | 'register'
@@ -90,9 +83,6 @@ export default function AuthPage() {
     setLoading(true)
     setError('')
     try {
-      const [workStartHour, workEndHour] =
-        WORK_SCHEDULE_MAP[formData.workSchedule] ?? [9, 17]
-
       const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,8 +93,6 @@ export default function AuthPage() {
           city: formData.city,
           preferredSports: formData.preferredSports,
           workSchedule: formData.workSchedule,
-          workStartHour,
-          workEndHour,
         }),
       })
       const data = await res.json()

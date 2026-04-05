@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Edit3, LogOut } from 'lucide-react'
+import { ArrowLeft, Check, Edit3, LogOut, Clock } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import StatsBarChart from '../components/ui/StatsBarChart'
 
@@ -19,11 +20,12 @@ const SPORTS = [
 const CITIES = ['Bucharest', 'Cluj', 'Iași', 'Timișoara', 'Brașov']
 
 const SCHEDULES = [
-  { id: '8-16',     label: '8:00 – 16:00', emoji: '🌅' },
-  { id: '9-17',     label: '9:00 – 17:00', emoji: '☀️' },
-  { id: '10-18',    label: '10:00 – 18:00', emoji: '🌤️' },
-  { id: 'flexible', label: 'Flexibil',      emoji: '🔄' },
-]
+  { id: '9-17', label: '9:00 – 17:00', emoji: '🏢' },
+  { id: '8-16', label: '8:00 – 16:00', emoji: '☀️' },
+  { id: '10-18', label: '10:00 – 18:00', emoji: '🌆' },
+  { id: 'flexible', label: 'Flexibil',   emoji: '🌊' },
+  { id: 'custom',   label: 'Custom',     emoji: '⚙️' },
+];
 
 function getInitials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
@@ -34,7 +36,8 @@ export default function MyProfilePage() {
   const navigate = useNavigate()
   const [saved, setSaved]   = useState(false)
   const [error, setError]   = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
   const [form, setForm]     = useState({
     name:              user?.name              ?? '',
     city:              user?.city              ?? 'Bucharest',
@@ -101,8 +104,23 @@ export default function MyProfilePage() {
     ? '🏢 La birou'
     : '📍 Locație nesetată'
 
+  const isCustomSchedule = !SCHEDULES.some(s => s.id === form.workSchedule) && form.workSchedule !== 'flexible';
+
   return (
     <div className="min-h-screen relative">
+      <AnimatePresence>
+        {showCustomModal && (
+          <CustomScheduleModal 
+            onClose={() => setShowCustomModal(false)} 
+            onSave={(s, e) => {
+              setForm(p => ({ ...p, workSchedule: `${s}-${e}` }));
+              setShowCustomModal(false);
+            }}
+            initialValue={isCustomSchedule ? form.workSchedule : '09:00-17:00'}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
         <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full opacity-15"
@@ -250,23 +268,31 @@ export default function MyProfilePage() {
             <p className="text-xs text-slate-500 mt-0.5 ml-8">Folosit pentru personalizarea calendarului și a pauzelor</p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {SCHEDULES.map(s => (
-              <button
-                key={s.id}
-                onClick={() => setForm(p => ({ ...p, workSchedule: s.id }))}
-                className={`flex flex-col items-center gap-1.5 rounded-xl p-3.5 border text-center transition-all duration-200 ${
-                  form.workSchedule === s.id
-                    ? 'bg-indigo-600/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10 scale-[1.02]'
-                    : 'bg-zinc-900/60 border-surface-border hover:border-indigo-500/30 hover:scale-[1.01]'
-                }`}
-              >
-                <span className="text-2xl">{s.emoji}</span>
-                <span className={`text-xs font-semibold leading-tight ${form.workSchedule === s.id ? 'text-white' : 'text-slate-400'}`}>
-                  {s.label}
-                </span>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {SCHEDULES.map(s => {
+              const isCustomItem = s.id === 'custom';
+              const isSelected = isCustomItem ? isCustomSchedule : form.workSchedule === s.id;
+              
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    if (isCustomItem) setShowCustomModal(true);
+                    else setForm(p => ({ ...p, workSchedule: s.id }));
+                  }}
+                  className={`flex flex-col items-center gap-1.5 rounded-xl p-3 border text-center transition-all duration-200 ${
+                    isSelected
+                      ? 'bg-indigo-600/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10 scale-[1.02]'
+                      : 'bg-zinc-900/60 border-surface-border hover:border-indigo-500/30 hover:scale-[1.01]'
+                  }`}
+                >
+                  <span className="text-2xl">{s.emoji}</span>
+                  <span className={`text-[10px] font-bold leading-tight ${isSelected ? 'text-white' : 'text-slate-400'}`}>
+                    {isCustomItem && isCustomSchedule ? form.workSchedule : s.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-start gap-2 bg-amber-500/8 border border-amber-500/15 rounded-xl px-3 py-2.5">
@@ -385,4 +411,81 @@ export default function MyProfilePage() {
       </main>
     </div>
   )
+}
+function CustomScheduleModal({ onClose, onSave, initialValue }) {
+  const [start, setStart] = useState(() => {
+    if (initialValue && initialValue.includes('-')) return initialValue.split('-')[0];
+    return '09:00';
+  });
+  const [end, setEnd] = useState(() => {
+    if (initialValue && initialValue.includes('-')) return initialValue.split('-')[1];
+    return '17:00';
+  });
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-sm rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-sky-500" />
+        
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">Program Personalizat</h3>
+            <p className="text-xs text-slate-500">Alege intervalul tău de lucru</p>
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Ora Început</label>
+            <input
+              type="time"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className="w-full bg-zinc-950/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Ora Sfârșit</label>
+            <input
+              type="time"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              className="w-full bg-zinc-950/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-8">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-sm font-semibold text-slate-400 hover:bg-white/10 transition-all"
+          >
+            Anulează
+          </button>
+          <button
+            onClick={() => onSave(start, end)}
+            className="flex-1 px-4 py-3 rounded-xl bg-indigo-500 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-400 transition-all"
+          >
+            Salvează
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
 }

@@ -1,6 +1,8 @@
 package com.ecosync.model;
 
+import java.time.LocalTime;
 import java.util.List;
+
 
 public class AuthResponse {
     private String token;
@@ -10,8 +12,8 @@ public class AuthResponse {
     private List<String> preferredSports;
 
     private String workSchedule;
-    private int workStartHour;
-    private int workEndHour;
+    private LocalTime workStartTime;
+    private LocalTime workEndTime;
 
     // Daily state
     private boolean requiresWorkLocationSetup;
@@ -38,17 +40,17 @@ public class AuthResponse {
         this.currentStreak = user.getCurrentStreak();
         this.matchesThisMonth = user.getMatchesThisMonth();
         this.workSchedule    = user.getWorkSchedule();
-        this.workStartHour   = user.getWorkStartHour();
-        this.workEndHour     = user.getWorkEndHour();
+        this.workStartTime   = user.getWorkStartTime();
+        this.workEndTime     = user.getWorkEndTime();
         this.gdprConsent     = user.isGdprConsent();
         this.criptareConsent = user.isCriptareConsent();
         this.anspdcpConsent  = user.isAnspdcpConsent();
         this.profilePicture  = user.getProfilePicture();
     }
 
-    public String getWorkSchedule()  { return workSchedule; }
-    public int    getWorkStartHour()  { return workStartHour; }
-    public int    getWorkEndHour()    { return workEndHour; }
+    public String getWorkSchedule()   { return workSchedule; }
+    public LocalTime getWorkStartTime() { return workStartTime; }
+    public LocalTime getWorkEndTime()   { return workEndTime; }
     public String getToken()          { return token; }
     public Long getUserId() { return userId; }
     public String getName() { return name; }

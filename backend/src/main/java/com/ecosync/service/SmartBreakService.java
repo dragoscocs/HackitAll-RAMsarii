@@ -14,11 +14,8 @@ import java.util.stream.Collectors;
 @Service
 public class SmartBreakService {
 
-    public List<SmartBreak> computeBreaks(int startHour, int endHour, List<MeetingSlot> meetings) {
+    public List<SmartBreak> computeBreaks(LocalTime workStart, LocalTime workEnd, List<MeetingSlot> meetings) {
         List<SmartBreak> resultBreaks = new ArrayList<>();
-        
-        LocalTime workStart = LocalTime.of(startHour, 0);
-        LocalTime workEnd = LocalTime.of(endHour, 0);
         
         LocalTime bufferStart = workStart.plusHours(1);
         LocalTime bufferEnd = workEnd.minusHours(1);
@@ -230,20 +227,28 @@ public class SmartBreakService {
         return true;
     }
 
-    public int[] parseWorkSchedule(String workSchedule) {
+    public LocalTime[] parseWorkSchedule(String workSchedule) {
         if (workSchedule == null || workSchedule.isBlank()) {
-            return new int[]{9, 17};
+            return new LocalTime[]{LocalTime.of(9, 0), LocalTime.of(17, 0)};
         }
         if ("flexible".equalsIgnoreCase(workSchedule.trim())) {
-            return new int[]{9, 18};
+            return new LocalTime[]{LocalTime.of(9, 0), LocalTime.of(18, 0)};
         }
         try {
-            String[] parts = workSchedule.trim().split("-");
-            int start = Integer.parseInt(parts[0].trim());
-            int end = Integer.parseInt(parts[1].trim());
-            return new int[]{start, end};
+            String clean = workSchedule.trim().replace(" ", "");
+            String[] parts = clean.split("-");
+            return new LocalTime[]{ parseTime(parts[0]), parseTime(parts[1]) };
         } catch (Exception e) {
-            return new int[]{9, 17};
+            return new LocalTime[]{LocalTime.of(9, 0), LocalTime.of(17, 0)};
+        }
+    }
+
+    private LocalTime parseTime(String t) {
+        if (t.contains(":")) {
+            String[] bits = t.split(":");
+            return LocalTime.of(Integer.parseInt(bits[0]), Integer.parseInt(bits[1]));
+        } else {
+            return LocalTime.of(Integer.parseInt(t), 0);
         }
     }
 

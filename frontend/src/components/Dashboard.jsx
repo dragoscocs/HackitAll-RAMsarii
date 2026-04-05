@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, CalendarDays, Home, Building2, ChevronRight, Check, X, Bell } from 'lucide-react'
+import { LogOut, CalendarDays, Home, Building2, ChevronRight, Check, X, Bell, MapPin, ChevronDown } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import FloatingAiAssistant from './FloatingAiAssistant'
 import AnimatedShaderHero from './ui/AnimatedShaderHero'
 import { GlowingButton } from './ui/GlowingButton'
@@ -28,6 +29,8 @@ const ALL_SPORTS_META = [
   { name: 'Gym',         icon: '💪', group: 'wellness' },
   { name: 'CrossFit',    icon: '🏋️', group: 'wellness'},
 ]
+
+const CITIES = ['București', 'Cluj-Napoca', 'Iași', 'Timișoara', 'Brașov', 'Constanța']
 
 function sortedSports(userPreferred) {
   const prefSet    = new Set(userPreferred)
@@ -349,10 +352,68 @@ function InvitationBanner() {
   )
 }
 
+function CityDropdown({ currentCity, onSelect }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 bg-white/3 border border-white/8 rounded-xl px-3 py-1.5 hover:bg-white/5 hover:border-white/20 transition-all group"
+      >
+        <MapPin className="w-3.5 h-3.5 text-slate-500 group-hover:text-brand-light transition-colors" />
+        <span className="text-[11px] font-semibold text-slate-300">{currentCity ?? 'București'}</span>
+        <ChevronDown className={`w-3 h-3 text-slate-600 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="absolute right-0 mt-2 w-44 bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100]"
+          >
+            <div className="py-1.5">
+              {CITIES.map((city) => {
+                const isActive = city === currentCity
+                return (
+                  <button
+                    key={city}
+                    onClick={() => { onSelect(city); setIsOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-[11px] font-medium transition-all flex items-center justify-between group ${
+                      isActive ? 'bg-brand/10 text-brand-light' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    {city}
+                    {isActive && <Check className="w-3 h-3" />}
+                    {!isActive && <div className="w-1 h-1 rounded-full bg-brand opacity-0 group-hover:opacity-100 transition-opacity" />}
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 /* ── Sport grid section ───────────────────────────────────────────── */
 function SportGridSection({ userSports, userCity }) {
   const navigate = useNavigate()
   const sorted   = sortedSports(userSports)
+  const { updateUser } = useAuth()
 
   return (
     <section className="space-y-5 animate-fade-in">
@@ -361,13 +422,16 @@ function SportGridSection({ userSports, userCity }) {
           <h2 className="text-base font-bold text-white">🤝 Sport cu colegii</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {userCity
-              ? <>Lobby-uri și parteneri din <strong className="text-slate-400">{userCity}</strong> · recomandat de AI</>
+              ? <>Lobby-uri și parteneri din <strong className="text-slate-400">{userCity}</strong></>
               : 'Alege sportul și găsește parteneri sau creează un lobby'}
           </p>
         </div>
-        <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-600 bg-white/3 border border-white/8 rounded-xl px-3 py-2 shrink-0">
-          <span>✨</span> AI-powered pairing
-        </div>
+        
+        {/* Modern City Selector */}
+        <CityDropdown
+          currentCity={userCity}
+          onSelect={(city) => updateUser({ city })}
+        />
       </div>
 
       {/* Sport grid */}

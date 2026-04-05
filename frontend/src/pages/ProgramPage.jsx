@@ -321,10 +321,24 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule, nowOver
   )
 
   const scheduleStr = workSchedule || '9-17'
-  const [startH, endH] = scheduleStr.split('-').map(Number)
-  const workStartHour = startH
-  const workEndHour = endH
-  const totalHours = workEndHour - workStartHour
+  
+  const parseTime = (t) => {
+    if (t.includes(':')) {
+      const [h, m] = t.split(':').map(Number)
+      return h + m / 60
+    }
+    return Number(t)
+  }
+
+  const workStartHour = parseTime(scheduleStr.split('-')[0])
+  const workEndHour   = parseTime(scheduleStr.split('-')[1])
+  const totalHours    = workEndHour - workStartHour
+
+  const formatHour = (h) => {
+    const hh = Math.floor(h)
+    const mm = Math.round((h - hh) * 60)
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+  }
 
   return (
     <div className="rounded-2xl border border-surface-border bg-surface-card p-4 flex flex-col gap-3">
@@ -336,7 +350,7 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule, nowOver
           <h3 className="text-sm font-semibold text-white">Pauze AI Azi</h3>
         </div>
         <span className="text-[10px] text-slate-500 font-medium tabular-nums">
-          {String(workStartHour).padStart(2,'0')}:00 – {String(workEndHour).padStart(2,'0')}:00
+          {formatHour(workStartHour)} – {formatHour(workEndHour)}
         </span>
       </div>
 
@@ -403,8 +417,8 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule, nowOver
             )}
           </div>
           <div className="flex justify-between text-[8px] text-slate-700 font-medium">
-            <span>{String(workStartHour).padStart(2,'0')}:00</span>
-            <span>{String(workEndHour).padStart(2,'0')}:00</span>
+            <span>{formatHour(workStartHour)}</span>
+            <span>{formatHour(workEndHour)}</span>
           </div>
         </div>
       )}

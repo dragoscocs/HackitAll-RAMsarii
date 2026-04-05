@@ -7,7 +7,9 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,12 +53,12 @@ public class AuthService {
         }
     }
 
-    /** Applies workSchedule string and derives workStartHour/workEndHour. */
-    private void applyWorkSchedule(User user, String schedule) {
+    /** Applies workSchedule string and derives workStartTime/workEndTime. */
+    public void applyWorkSchedule(User user, String schedule) {
         user.setWorkSchedule(schedule);
-        int[] hours = smartBreakService.parseWorkSchedule(schedule);
-        user.setWorkStartHour(hours[0]);
-        user.setWorkEndHour(hours[1]);
+        LocalTime[] hours = smartBreakService.parseWorkSchedule(schedule);
+        user.setWorkStartTime(hours[0]);
+        user.setWorkEndTime(hours[1]);
     }
 
     public AuthResponse register(String name, String email, String password, String city, List<String> sports, String workSchedule) {

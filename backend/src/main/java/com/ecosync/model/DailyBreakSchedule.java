@@ -5,30 +5,30 @@ import java.util.List;
 
 public class DailyBreakSchedule {
 
-    private int workStartHour;
-    private int workEndHour;
+    private LocalTime workStart;
+    private LocalTime workEnd;
     private List<SmartBreak> scheduledBreaks;
     private List<MeetingSlot> meetings;
     private SmartBreak nextBreak;
 
     public DailyBreakSchedule() {}
 
-    public DailyBreakSchedule(int workStartHour, int workEndHour,
+    public DailyBreakSchedule(LocalTime workStart, LocalTime workEnd,
                                List<SmartBreak> scheduledBreaks,
                                List<MeetingSlot> meetings,
                                SmartBreak nextBreak) {
-        this.workStartHour        = workStartHour;
-        this.workEndHour          = workEndHour;
+        this.workStart            = workStart;
+        this.workEnd              = workEnd;
         this.scheduledBreaks      = scheduledBreaks;
         this.meetings             = meetings;
         this.nextBreak            = nextBreak;
     }
 
-    public int getWorkStartHour() { return workStartHour; }
-    public void setWorkStartHour(int workStartHour) { this.workStartHour = workStartHour; }
+    public LocalTime getWorkStart() { return workStart; }
+    public void setWorkStart(LocalTime workStart) { this.workStart = workStart; }
 
-    public int getWorkEndHour() { return workEndHour; }
-    public void setWorkEndHour(int workEndHour) { this.workEndHour = workEndHour; }
+    public LocalTime getWorkEnd() { return workEnd; }
+    public void setWorkEnd(LocalTime workEnd) { this.workEnd = workEnd; }
 
     public List<SmartBreak> getScheduledBreaks() { return scheduledBreaks; }
     public void setScheduledBreaks(List<SmartBreak> scheduledBreaks) { this.scheduledBreaks = scheduledBreaks; }
