@@ -27,18 +27,20 @@ export function generateCalendarForUser(email, monday) {
 function generateAna(e) {
   return [
     // ── WEEK 0 ──────────────────────────────────────────────────────────────
-    // Monday
+    // Monday - Testing: Occupied at 12:30. 
+    // Gaps: 9:15-9:30, 11:00-12:00, 13:00-14:00. 
+    // Lunch targets 12:30, so it should pick the 11:00-12:00 gap (ending at 12:00).
     e(0,0, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
     e(0,0, 9,30,11, 0, 'Sprint Planning Q2 — Iterație 3',      'planning',   'Victor Dumitrescu'),
-    e(0,0,13, 0,13,30, '1:1 cu Managerul',                     'one-on-one', 'Cristina Marin'),
+    e(0,0,12, 0,13, 0, 'Prânz de Afaceri — Parteneri ING',     'team',       'Cristina Marin'),
     e(0,0,14, 0,15, 0, 'Team Sync — Roadmap Produs',           'team',       'Bogdan Popa'),
     e(0,0,15,15,16, 0, 'Revizie Documentație GDPR',            'review',     'Legal Team'),
-    // Tuesday
+    // Tuesday - Testing: Marathon meeting 10:30-16:00. 
+    // This blocks the entire 10:30-15:30 window. Lunch must move to 16:00.
     e(0,1, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
-    e(0,1,10, 0,11,30, 'Workshop: UX Research Methods',        'workshop',   'Innovation Lab'),
-    e(0,1,13, 0,13,30, '1:1 cu Managerul',                     'one-on-one', 'Cristina Marin'),
-    e(0,1,14, 0,14,45, 'Review Quarterly OKRs',                'review',     'Cristina Marin'),
-    e(0,1,15, 0,16, 0, 'Tech Sync — Mobile App Banking',       'team',       'Radu Georgescu'),
+    e(0,1, 9,30,10,30, 'Recenzie Design Sisteme',              'review',     'Design Team'),
+    e(0,1,10,30,16, 0, 'MARATON: Planificare Strategică Q3',   'workshop',   'Management Team'),
+    e(0,1,16,30,17, 0, 'Wrap-up Maraton',                      'team',       'Victor Dumitrescu'),
     // Wednesday
     e(0,2, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
     e(0,2,10,30,11,30, 'Grooming Sprint Backlog',              'planning',   'Victor Dumitrescu'),
@@ -60,8 +62,9 @@ function generateAna(e) {
     // ── WEEK 1 ──────────────────────────────────────────────────────────────
     // Monday
     e(1,0, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
-    e(1,0, 9,30,10,30, 'Refinement Sprint Backlog',            'planning',   'Victor Dumitrescu'),
-    e(1,0,14, 0,15, 0, 'Team Sync — Prioritizare Features',    'team',       'Bogdan Popa'),
+    e(1,0, 9, 30, 10, 30, 'Refinement Sprint Backlog',            'planning',   'Victor Dumitrescu'),
+    e(1,0, 12, 15, 13, 0, 'Sync Echipa Amsterdam',                'one-on-one', 'Global Team', true),
+    e(1,0, 14, 0, 15, 0, 'Team Sync — Prioritizare Features',    'team',       'Bogdan Popa'),
     e(1,0,15,30,16,30, 'Accessibility Review — WCAG 2.2',      'review',     'Design Team'),
     // Tuesday
     e(1,1, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
@@ -71,8 +74,9 @@ function generateAna(e) {
     // Wednesday — overlapping meetings
     e(1,2, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
     e(1,2,10,30,11,30, 'Grooming Sprint Backlog',              'planning',   'Victor Dumitrescu'),
-    e(1,2,11, 0,12, 0, 'Customer Journey Review — Cards',      'team',       'UX Team'),
-    e(1,2,13, 0,14, 0, 'Catch-up cu echipa Amsterdam',         'one-on-one', 'Global Team', true),
+    e(1,2, 11, 0, 12, 0, 'Customer Journey Review — Cards',      'team',       'UX Team'),
+    e(1,2, 12, 15, 13, 15, 'Feedback Sesion — Architecture',      'review',     'Engineering Lead'),
+    e(1,2, 13, 30, 14, 0, 'Sync cu echipa Amsterdam',             'one-on-one', 'Global Team', true),
     e(1,2,15, 0,16, 0, 'Product Metrics Review',               'review',     'Analytics Team'),
     // Thursday
     e(1,3, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
@@ -88,8 +92,9 @@ function generateAna(e) {
     // ── WEEK 2 ──────────────────────────────────────────────────────────────
     // Monday
     e(2,0, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
-    e(2,0, 9,30,11, 0, 'Sprint Planning Q2 — Iterație 4',      'planning',   'Victor Dumitrescu'),
-    e(2,0,13, 0,13,30, '1:1 cu Managerul',                     'one-on-one', 'Cristina Marin'),
+    e(2,0, 9, 30, 11, 0, 'Sprint Planning Q2 — Iterație 4',      'planning',   'Victor Dumitrescu'),
+    e(2,0, 12, 0, 13, 0, 'Alignment: Marketing Roadmap',          'team',       'Marketing Team'),
+    e(2,0, 13, 15, 13, 45, '1:1 cu Managerul',                     'one-on-one', 'Cristina Marin'),
     e(2,0,14, 0,15, 0, 'Team Sync — Obiective Trimestrul III', 'team',       'Bogdan Popa'),
     // Tuesday
     e(2,1, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
@@ -100,8 +105,9 @@ function generateAna(e) {
     // Wednesday
     e(2,2, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
     e(2,2,10, 0,11, 0, 'Architecture Review — Microservicii',  'review',     'Engineering Lead'),
-    e(2,2,11,30,12, 0, 'Grooming Sprint Backlog',              'planning',   'Victor Dumitrescu'),
-    e(2,2,13,30,14,30, 'Catch-up cu echipa Amsterdam',         'one-on-one', 'Global Team', true),
+    e(2,2, 11, 30, 12, 0, 'Grooming Sprint Backlog',              'planning',   'Victor Dumitrescu'),
+    e(2,2, 12, 15, 13, 15, 'Architecture Deep-Dive',              'review',     'Tech Council'),
+    e(2,2, 13, 30, 14, 30, 'Catch-up cu echipa Amsterdam',         'one-on-one', 'Global Team', true),
     e(2,2,15,30,16,30, 'Feedback Session — Design Tokens',     'review',     'Design System'),
     // Thursday
     e(2,3, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
@@ -118,8 +124,9 @@ function generateAna(e) {
     // ── WEEK 3 ──────────────────────────────────────────────────────────────
     // Monday
     e(3,0, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
-    e(3,0, 9,30,10,30, 'Refinement Sprint Backlog',            'planning',   'Victor Dumitrescu'),
-    e(3,0,13, 0,13,30, '1:1 cu Managerul',                     'one-on-one', 'Cristina Marin'),
+    e(3,0, 9, 30, 10, 30, 'Refinement Sprint Backlog',            'planning',   'Victor Dumitrescu'),
+    e(3,0, 12, 0, 13, 0, 'Risk Assessment: Release Candidate',    'review',     'Security Team'),
+    e(3,0, 13, 15, 13, 45, '1:1 cu Managerul',                     'one-on-one', 'Cristina Marin'),
     e(3,0,14, 0,15, 0, 'Team Sync — Pregătire Release',        'team',       'Bogdan Popa'),
     e(3,0,15,30,16,30, 'Review Documentație Tehnică',          'review',     'Engineering Lead'),
     // Tuesday
@@ -130,8 +137,9 @@ function generateAna(e) {
     // Wednesday
     e(3,2, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),
     e(3,2,10,30,11,30, 'Grooming Sprint Backlog',              'planning',   'Victor Dumitrescu'),
-    e(3,2,11, 0,12, 0, 'Customer Journey Review — Credite',    'team',       'UX Team'),
-    e(3,2,13, 0,14, 0, 'Catch-up cu echipa Amsterdam',         'one-on-one', 'Global Team', true),
+    e(3,2, 11, 0, 12, 0, 'Customer Journey Review — Credite',    'team',       'UX Team'),
+    e(3,2, 12, 30, 13, 30, 'Quarterly Results Preview',            'review',     'Exec Team'),
+    e(3,2, 13, 45, 14, 45, 'Catch-up cu echipa Amsterdam',         'one-on-one', 'Global Team', true),
     e(3,2,15, 0,16, 0, 'Release Readiness Review',             'review',     'Release Team'),
     // Thursday — back-to-back meetings 14:00-17:00
     e(3,3, 9, 0, 9,15, 'Daily Standup — Echipa Produs',        'standup',    'Ana Ionescu'),

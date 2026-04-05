@@ -46,7 +46,7 @@ function timeToPx(h, m = 0) {
 }
 
 function durationToPx(min) {
-  return Math.max(22, (min / 60) * SLOT_H)
+  return (min / 60) * SLOT_H
 }
 
 function getDayLoad(evts, day) {
@@ -229,8 +229,7 @@ function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, next
                                  m === nextBreakToday.time.getMinutes()
                   
                   const top    = timeToPx(h, m)
-                  // 3 minutes is ~3.4px, we let padding govern the minimum visual size rather than forcing 16px which bled over boundaries
-                  const height = Math.max(6, durationToPx(brk.durationMinutes || 15))
+                  const height = durationToPx(brk.durationMinutes || 15)
                   const isLunch = brk.type === 'LUNCH'
 
                   return (

@@ -70,7 +70,19 @@ public class SmartBreakService {
             
             if (totalDurationMins >= 90) {
                 LocalTime breakTime = blockEnd.plusMinutes(2);
-                if (!breakTime.isBefore(workStart) && !breakTime.isAfter(workEnd)) {
+                
+                // Look-ahead check: ensure we don't start a fatigue break if another meeting begins immediately
+                final LocalTime btFinal = breakTime;
+                long gapToNext = sortedMeetings.stream()
+                        .filter(m -> {
+                            LocalTime mStart = LocalTime.of(m.getStartHour(), m.getStartMinute());
+                            return !mStart.isBefore(blockEnd);
+                        })
+                        .mapToLong(m -> ChronoUnit.MINUTES.between(btFinal, LocalTime.of(m.getStartHour(), m.getStartMinute())))
+                        .findFirst()
+                        .orElse(10L);
+
+                if (!breakTime.isBefore(workStart) && !breakTime.isAfter(workEnd) && gapToNext >= 3) {
                     resultBreaks.add(new SmartBreak(
                             "FATIGUE_RECOVERY",
                             breakTime,
@@ -123,7 +135,16 @@ public class SmartBreakService {
                 while (!sCursor.isAfter(sMax)) {
                     if (!sCursor.isBefore(lunchMin) && !sCursor.plusMinutes(15).isAfter(lunchMax)) {
                         long diff = Math.abs(ChronoUnit.MINUTES.between(sCursor, lunchIdeal));
-                        if (diff < bestLunchDiff) {
+                        
+                        // Check if this lunch intersects with any existing fatigue breaks
+                        final LocalTime finalSCursor = sCursor;
+                        final LocalTime finalSCursorEnd = sCursor.plusMinutes(15);
+                        boolean overlaps = resultBreaks.stream().anyMatch(b -> {
+                            LocalTime bEnd = b.getTime().plusMinutes(b.getDurationMinutes());
+                            return finalSCursor.isBefore(bEnd) && finalSCursorEnd.isAfter(b.getTime());
+                        });
+
+                        if (diff < bestLunchDiff && !overlaps) {
                             bestLunchDiff = diff;
                             bestLunchTime = sCursor;
                         }
@@ -181,8 +202,21 @@ public class SmartBreakService {
         }
 
         // Sort breaks chronologically
-        resultBreaks.sort(Comparator.comparing(SmartBreak::getTime));
-        return resultBreaks;
+        // Final Safety Filter: Ensure NO break overlaps ANY meeting
+        List<SmartBreak> safeBreaks = resultBreaks.stream()
+                .filter(brk -> {
+                    LocalTime bS = brk.getTime();
+                    LocalTime bE = bS.plusMinutes(brk.getDurationMinutes());
+                    return sortedMeetings.stream().noneMatch(m -> {
+                        LocalTime mS = LocalTime.of(m.getStartHour(), m.getStartMinute());
+                        LocalTime mE = LocalTime.of(m.getEndHour(), m.getEndMinute());
+                        return bS.isBefore(mE) && bE.isAfter(mS);
+                    });
+                })
+                .sorted(Comparator.comparing(SmartBreak::getTime))
+                .collect(Collectors.toList());
+
+        return safeBreaks;
     }
 
     private boolean isValidGap(LocalTime proposedTime, List<SmartBreak> currentBreaks) {

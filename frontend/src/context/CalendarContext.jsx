@@ -164,7 +164,12 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
 
     if (totalDurationMins >= 90) {
       const breakTime = new Date(blockEnd.getTime() + 2 * 60 * 1000)
-      if (breakTime >= workStart && breakTime <= workEnd) {
+      
+      // Look-ahead check: ensure we don't start a fatigue break if another meeting begins immediately
+      const nextMeeting = sortedMeetings.find(m => new Date(m.start) >= blockEnd)
+      const gapToNext = nextMeeting ? (new Date(nextMeeting.start) - breakTime) / 60000 : 10
+      
+      if (breakTime >= workStart && breakTime <= workEnd && gapToNext >= 3) {
         resultBreaks.push({
           type: 'FATIGUE_RECOVERY',
           time: breakTime,
@@ -211,7 +216,12 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
         const sCursorEnd = new Date(sCursor.getTime() + 15 * 60000);
         if (sCursor >= lunchMin && sCursorEnd <= lunchMax) {
           const diff = Math.abs(sCursor - lunchIdeal) / 60000;
-          if (diff < bestLunchDiff) {
+          // Check if this lunch overlaps with any existing fatigue breaks
+          const overlapsExisting = resultBreaks.some(b => 
+            (sCursor < new Date(b.time.getTime() + b.durationMinutes * 60000)) &&
+            (sCursorEnd > b.time)
+          );
+          if (diff < bestLunchDiff && !overlapsExisting) {
             bestLunchDiff = diff;
             bestLunchTime = new Date(sCursor);
           }
@@ -273,8 +283,18 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
       }
     }
   }
+  // Final Safety Filter: Ensure NO break overlaps ANY meeting
+  const safeBreaks = resultBreaks.filter(brk => {
+    const bStart = brk.time;
+    const bEnd = new Date(bStart.getTime() + brk.durationMinutes * 60000);
+    return !sortedMeetings.some(m => {
+      const mS = new Date(m.start);
+      const mE = new Date(m.end);
+      return bStart < mE && bEnd > mS;
+    });
+  });
 
-  return resultBreaks.sort((a, b) => a.time - b.time)
+  return safeBreaks.sort((a, b) => a.time - b.time)
 }
 
 const CalendarContext = createContext(null)
