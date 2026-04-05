@@ -6,6 +6,7 @@ import { SportLobbyProvider } from './context/SportLobbyContext'
 import LegalFooter from './components/LegalFooter'
 import PwaInstallPrompt from './components/PwaInstallPrompt'
 import DemoControls from './components/DemoControls'
+import BreakNotificationPopup from './components/BreakNotificationPopup'
 import ScrollToTop from './components/ScrollToTop'
 import CookieConsent from './components/CookieConsent'
 import AuthPage from './pages/AuthPage'
@@ -61,6 +62,7 @@ export default function App() {
             <CookieConsent />
             <PwaInstallPrompt />
             <DemoControls />
+            <BreakNotificationPopup />
           </BrowserRouter>
           </SportLobbyProvider>
         </CalendarProvider>

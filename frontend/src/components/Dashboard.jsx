@@ -137,27 +137,14 @@ function FlipCard({ icon, label, target, unit, sub, color, delay, definition }) 
 }
 
 /* ── Smart Break Banner ──────────────────────────────────────────── */
-function SmartBreakBanner({ userId, workLocation }) {
+function SmartBreakBanner() {
   const navigate = useNavigate()
-  const [schedule, setSchedule]       = useState(null)
-  const [suggestion, setSuggestion]   = useState(null)
-  const [snoozedIdx, setSnoozedIdx]   = useState(0)   // skip breaks before this index
+  const { nextBreak, overdueBreak, addTakenBreak, snoozeBreak, demoNow, adjustedSmartBreaks } = useCalendar()
 
-  const todayDow  = new Date().getDay()
+  const now       = demoNow ?? new Date()
+  const todayDow  = now.getDay()
   const isWeekend = todayDow === 0 || todayDow === 6
 
-  useEffect(() => {
-    if (!userId || isWeekend) return
-    Promise.all([
-      fetch(`/api/breaks/${userId}/schedule`).then(r => r.ok ? r.json() : null),
-      fetch(`/api/breaks/${userId}`).then(r => r.ok ? r.json() : null),
-    ]).then(([sched, sugg]) => {
-      if (sched) setSchedule(sched)
-      if (sugg) setSuggestion(sugg)
-    }).catch(() => {})
-  }, [userId, isWeekend])
-
-  // Weekend — show a rest card instead of nothing
   if (isWeekend) {
     return (
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4 flex items-center gap-4 animate-fade-in">
@@ -176,93 +163,95 @@ function SmartBreakBanner({ userId, workLocation }) {
     )
   }
 
-  if (!schedule) return null
-
-  const now         = new Date()
-  const currentHour = now.getHours()
-  const currentMin  = now.getMinutes()
-  const nowMin      = currentHour * 60 + currentMin
-
-  const breaks   = schedule.scheduledBreakHours ?? []
-  const meetings = schedule.meetings ?? []
-
-  // Find which break to show (respects snooze index)
-  let displayIdx = -1
-  for (let i = snoozedIdx; i < breaks.length; i++) {
-    const breakMin = breaks[i] * 60
-    if (breakMin >= nowMin - 45) { displayIdx = i; break }
+  const displayBreak = overdueBreak ?? nextBreak
+  if (!displayBreak) {
+    // All breaks done for today
+    const allTaken = adjustedSmartBreaks.length > 0 && adjustedSmartBreaks.every(b => b.taken)
+    if (!allTaken) return null
+    return (
+      <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 px-5 py-4 flex items-center gap-4 animate-fade-in">
+        <span className="text-2xl shrink-0">🎉</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-violet-300">Ai luat toate pauzele de azi!</p>
+          <p className="text-xs text-slate-500 mt-0.5">Wellbeing 100%. Continuă tot așa mâine.</p>
+        </div>
+      </div>
+    )
   }
-  if (displayIdx === -1) return null
 
-  const breakHour   = breaks[displayIdx]
-  const breakMin    = breakHour * 60
-  const minDiff     = breakMin - nowMin          // negative = overdue
-  const isOverdue   = minDiff < 0
-  const isImminent  = minDiff >= 0 && minDiff <= 20
+  const isOverdue  = overdueBreak !== null
+  const minDiff    = Math.round((displayBreak.time - now) / 60000)
+  const absMin     = Math.abs(minDiff)
+  const isImminent = !isOverdue && minDiff <= 20
+  const isFar      = !isOverdue && minDiff > 20
 
-  // Only show when break is within 20 min coming up OR up to 45 min overdue
-  if (minDiff > 20 || minDiff < -45) return null
+  const fmt = (d) => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  const breakTimeStr = fmt(displayBreak.time)
 
-  const absMin       = Math.abs(Math.round(minDiff))
-  const breakTimeStr = `${String(breakHour).padStart(2, '0')}:00`
+  const goBreak = () => {
+    addTakenBreak()
+    navigate('/pause')
+  }
 
-  // Next meeting AFTER this break for context
-  const nextMeeting = meetings
-    .filter(m => m.startHour > breakHour)
-    .sort((a, b) => a.startHour - b.startHour)[0]
+  if (isFar) {
+    // Calm "upcoming" indicator — always visible
+    return (
+      <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 px-5 py-4 flex items-center gap-4 animate-fade-in">
+        <div className="w-9 h-9 rounded-xl bg-indigo-500/15 flex items-center justify-center text-lg shrink-0">🌿</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white">
+            Următoarea pauză AI la <span className="text-indigo-400">{breakTimeStr}</span>
+            {displayBreak.adjusted && <span className="ml-2 text-[10px] text-indigo-300 bg-indigo-500/15 border border-indigo-500/25 rounded-full px-2 py-0.5">✨ Reconfigurat</span>}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {displayBreak.reason} · în {Math.floor(absMin / 60) > 0 ? `${Math.floor(absMin/60)}h ` : ''}{absMin % 60}min
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button onClick={goBreak}
+            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all hover:scale-105 shadow-lg">
+            🌿 Ia o acum
+          </button>
+          <button onClick={() => navigate('/program')}
+            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 text-xs font-medium transition-all">
+            📅 Program
+          </button>
+        </div>
+      </div>
+    )
+  }
 
-  const snooze = () => setSnoozedIdx(displayIdx + 1)
-
-  const confirmBreak = () =>
-    navigate('/pause', { state: { suggestionText: suggestion?.suggestionText } })
-
-  // Color scheme
+  // Imminent or overdue
   const scheme = isOverdue
-    ? { outer: 'bg-emerald-500/10 border-emerald-400/30', dot: 'bg-emerald-400', pulse: true,
-        badge: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/25',
-        btn:   'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/40' }
+    ? { outer: 'bg-red-500/10 border-red-400/35', dot: 'bg-red-400', pulse: true,
+        btn: 'bg-red-500 hover:bg-red-400 shadow-red-500/40' }
     : { outer: 'bg-amber-500/10 border-amber-400/30', dot: 'bg-amber-400', pulse: false,
-        badge: 'bg-amber-400/10 text-amber-300 border-amber-400/25',
-        btn:   'bg-amber-500 hover:bg-amber-400 shadow-amber-500/40' }
+        btn: 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/40' }
 
   return (
     <div className={`rounded-2xl border px-5 py-4 flex items-center gap-4 animate-slide-up ${scheme.outer}`}>
-      {/* Live dot */}
       <div className="relative shrink-0">
         <div className={`w-3 h-3 rounded-full ${scheme.dot}`} />
         {scheme.pulse && (
           <div className={`absolute inset-0 w-3 h-3 rounded-full ${scheme.dot} animate-ping opacity-60`} />
         )}
       </div>
-
-      {/* Text */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-white leading-tight">
-            {isOverdue
-              ? `⏰ E timpul de o pauză! · ${absMin} min față de ${breakTimeStr}`
-              : `🌿 Pauza ta e în ${absMin} ${absMin === 1 ? 'minut' : 'minute'} · ${breakTimeStr}`}
-          </p>
-          {nextMeeting && (
-            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-lg border ${scheme.badge}`}>
-              Urmează: {nextMeeting.title} la {String(nextMeeting.startHour).padStart(2, '0')}:00
-            </span>
-          )}
-        </div>
-        {suggestion?.suggestionText && (
-          <p className="text-xs text-slate-500 mt-1 truncate">{suggestion.suggestionText}</p>
-        )}
+        <p className="text-sm font-semibold text-white leading-tight">
+          {isOverdue
+            ? `⏰ E timpul de o pauză! · ${absMin} min față de ${breakTimeStr}`
+            : `🌿 Pauza ta e în ${absMin} ${absMin === 1 ? 'minut' : 'minute'} · ${breakTimeStr}`}
+        </p>
+        <p className="text-xs text-slate-500 mt-0.5">{displayBreak.reason}</p>
       </div>
-
-      {/* Actions */}
       <div className="flex gap-2 shrink-0">
-        <button onClick={snooze}
+        <button onClick={() => snoozeBreak(10)}
           className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-sm font-medium transition-all">
-          😴 Amân
+          😴 +10 min
         </button>
-        <button onClick={confirmBreak}
+        <button onClick={goBreak}
           className={`px-5 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:scale-105 shadow-lg ${scheme.btn}`}>
-          🌿 Intru în pauză
+          🌿 Ia pauza
         </button>
       </div>
     </div>
@@ -514,8 +503,8 @@ export default function Dashboard() {
           className="animate-fade-in"
         />
 
-        {/* Smart Break Banner — appears ONLY when a break is due or imminent */}
-        <SmartBreakBanner userId={user?.userId} workLocation={workLocation} />
+        {/* Smart Break Banner — always visible (upcoming, imminent, or overdue) */}
+        <SmartBreakBanner />
 
         {/* Flip stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

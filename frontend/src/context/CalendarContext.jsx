@@ -317,6 +317,30 @@ export function CalendarProvider({ children }) {
   const [breaksToday, setBreaksToday] = useState(1)
   const [demoNow, setDemoNow] = useState(null) // Date | null — overrides new Date() for demo/presentation
 
+  // Real-time clock tick (every 30s) — used when demoNow is null
+  const [clockNow, setClockNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setClockNow(new Date()), 30000)
+    return () => clearInterval(id)
+  }, [])
+
+  // takenBreaks — actual break times recorded today
+  const [takenBreaks, setTakenBreaks] = useState([]) // Array<Date>
+  // snoozedUntil — break notification snoozed until this time
+  const [snoozedUntil, setSnoozedUntil] = useState(null) // Date | null
+
+  const addTakenBreak = (breakTime = null) => {
+    const t = breakTime ?? demoNow ?? new Date()
+    setTakenBreaks(prev => [...prev, t])
+    setBreaksToday(p => p + 1)
+    setSnoozedUntil(null)
+  }
+
+  const snoozeBreak = (minutes = 10) => {
+    const base = demoNow ?? new Date()
+    setSnoozedUntil(new Date(base.getTime() + minutes * 60000))
+  }
+
   const nextWeek = () => setSelectedWeekOffset(o => Math.min(3, o + 1))
   const prevWeek = () => setSelectedWeekOffset(o => Math.max(0, o - 1))
 
@@ -348,6 +372,38 @@ export function CalendarProvider({ children }) {
     const user = JSON.parse(localStorage.getItem('syncfit_user') || '{}')
     return calcSmartBreaks(todayEvents, user.workSchedule, demoNow ?? new Date())
   }, [todayEvents, demoNow])
+
+  // Adjusted breaks: marks taken ones, pushes future ones if taken too recently
+  const adjustedSmartBreaks = useMemo(() => {
+    const base = smartBreaks.map(b => ({ ...b, taken: false, adjusted: false }))
+    if (takenBreaks.length === 0) return base
+    const lastTaken = takenBreaks[takenBreaks.length - 1]
+    const minNext = new Date(lastTaken.getTime() + 45 * 60000)
+    const effectNow = demoNow ?? new Date()
+    return base.map(b => {
+      const isTaken = takenBreaks.some(t => Math.abs(t.getTime() - b.time.getTime()) <= 30 * 60000)
+      if (isTaken) return { ...b, taken: true }
+      if (b.time > effectNow && b.time < minNext) return { ...b, time: new Date(minNext), adjusted: true }
+      return b
+    }).sort((a, b) => a.time - b.time)
+  }, [smartBreaks, takenBreaks, demoNow])
+
+  // nextBreak — first upcoming non-taken break
+  const nextBreak = useMemo(() => {
+    const now = demoNow ?? clockNow
+    return adjustedSmartBreaks.find(b => !b.taken && b.time > now) ?? null
+  }, [adjustedSmartBreaks, demoNow, clockNow])
+
+  // overdueBreak — past break (within 45 min) not yet taken and not snoozed
+  const overdueBreak = useMemo(() => {
+    const now = demoNow ?? clockNow
+    if (snoozedUntil && now < snoozedUntil) return null
+    return adjustedSmartBreaks.find(b =>
+      !b.taken &&
+      b.time <= now &&
+      b.time > new Date(now.getTime() - 45 * 60000)
+    ) ?? null
+  }, [adjustedSmartBreaks, demoNow, clockNow, snoozedUntil])
 
   const moodScore = useMemo(() => calcMoodScore(todayEvents, breaksToday), [todayEvents, breaksToday])
   const moodFactors = useMemo(() => getMoodFactors(todayEvents, breaksToday), [todayEvents, breaksToday])
@@ -399,6 +455,8 @@ export function CalendarProvider({ children }) {
       moodScore, moodFactors, moodLabel, moodReco,
       effectiveMoodScore, effectiveMoodLabel, effectiveMoodReco,
       breaksToday, recordBreak,
+      takenBreaks, addTakenBreak, snoozeBreak, snoozedUntil,
+      adjustedSmartBreaks, nextBreak, overdueBreak,
       selectedWeekOffset, nextWeek, prevWeek,
       weekStart, weekDays,
       todayEvents, breakOpportunities, smartBreaks,

@@ -115,8 +115,7 @@ export default function PausePage() {
   const navigate   = useNavigate()
   const location   = useLocation()
   const canvasRef  = useShaderBackground()
-  const { recordBreak }          = useCalendar()
-  const { setMoodFromSlider }    = useCalendar()
+  const { recordBreak, addTakenBreak, setMoodFromSlider } = useCalendar()
   const { recordBreakInContext, user } = useAuth()
   const timerRef   = useRef(null)
   const recordedRef = useRef(false)
@@ -141,7 +140,7 @@ export default function PausePage() {
   const finishWithMood = (sliderValue) => {
     if (!recordedRef.current) {
       recordedRef.current = true
-      recordBreak()
+      addTakenBreak()      // records time + increments count + clears snooze
       recordBreakInContext()
     }
     const firstName = user?.name?.split(' ')[0] ?? 'Coleg'
