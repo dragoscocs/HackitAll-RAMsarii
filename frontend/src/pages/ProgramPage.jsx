@@ -218,9 +218,10 @@ function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, next
                   const h = brk.time.getHours()
                   const m = brk.time.getMinutes()
                   const breakHDecimal = h + m / 60
+                  const durationFraction = (brk.durationMinutes || 15) / 60
                   
-                  // A break is past if it's on a past day, or earlier today
-                  const isPast = isPastDay || (isToday && breakHDecimal + 0.25 < currentHDecimal)
+                  // A break is past if it's on a past day, or it finished earlier today
+                  const isPast = isPastDay || (isToday && breakHDecimal + durationFraction < currentHDecimal)
                   
                   // Only pulse "Next Break" if it's today
                   const isNext = isToday && nextBreakToday && 
@@ -228,26 +229,34 @@ function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, next
                                  m === nextBreakToday.time.getMinutes()
                   
                   const top    = timeToPx(h, m)
-                  const height = Math.max(22, durationToPx(15))
+                  // 3 minutes is ~3.4px, we let padding govern the minimum visual size rather than forcing 16px which bled over boundaries
+                  const height = Math.max(6, durationToPx(brk.durationMinutes || 15))
+                  const isLunch = brk.type === 'LUNCH'
 
                   return (
                     <div
                       key={`break-${idx}`}
-                      title={`Pauză AI: ${brk.reason} — ${fmtTime(brk.time)} (15 min)`}
+                      title={isLunch ? `Pauză de Masă — ${fmtTime(brk.time)} (15 min)` : `Pauză AI: ${brk.reason} — ${fmtTime(brk.time)} (${brk.durationMinutes} min)`}
                       className={`absolute inset-x-0.5 rounded-md border px-1.5 overflow-hidden z-20 transition-all ${
                         isPast
-                          ? 'opacity-30 bg-emerald-500/10 border-emerald-500/15'
+                          ? (isLunch ? 'opacity-40 bg-amber-500/10 border-amber-500/15' : 'opacity-40 bg-emerald-500/10 border-emerald-500/15')
                           : isNext
-                          ? 'bg-emerald-500/25 border-emerald-400/60 ring-1 ring-emerald-400/30 shadow-sm shadow-emerald-500/20'
-                          : 'bg-emerald-500/15 border-emerald-500/35'
+                          ? (isLunch ? 'bg-amber-500/25 border-amber-400/60 ring-1 ring-amber-400/30 shadow-sm shadow-amber-500/20' : 'bg-emerald-500/25 border-emerald-400/60 ring-1 ring-emerald-400/30 shadow-sm shadow-emerald-500/20')
+                          : (isLunch ? 'bg-amber-500/20 border-amber-500/40' : 'bg-emerald-500/15 border-emerald-500/35')
                       }`}
-                      style={{ top: top + 1, height: height - 2 }}
+                      style={{ top: top, height: height, minHeight: '10px' }}
                     >
                       <div className="flex items-center gap-0.5 h-full">
-                        <span className="text-[8px]">🌿</span>
-                        <span className={`text-[8px] font-bold leading-none ${isNext ? 'text-emerald-200' : 'text-emerald-400'}`}>
-                          Pauză AI{isNext ? ' ⚡' : ''}
-                        </span>
+                        <span className="text-[8px]">{isLunch ? '🍱' : '🌿'}</span>
+                        {height > 10 && (
+                          <span className={`text-[8px] font-bold leading-none truncate overflow-hidden whitespace-nowrap group-hover:whitespace-normal group-hover:overflow-visible transition-all ${
+                            isLunch 
+                              ? (isNext ? 'text-amber-200' : 'text-amber-400')
+                              : (isNext ? 'text-emerald-200' : 'text-emerald-400')
+                          }`}>
+                            {brk.reason} ({brk.durationMinutes || 15} min){isNext ? ' ⚡' : ''}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )
@@ -339,10 +348,11 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule }) {
             const h = brk.time.getHours()
             const m = brk.time.getMinutes()
             const breakH = h + m / 60
-            const isPast = breakH + 0.25 < currentHDec
+            const durationFrac = (brk.durationMinutes || 15) / 60
+            const isPast = breakH + durationFrac < currentHDec
             const isNext = nextBreak && h === nextBreak.time.getHours() && m === nextBreak.time.getMinutes()
             return (
-              <div key={idx} title={brk.reason} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold border transition-all select-none cursor-help ${
+              <div key={idx} title={`${brk.reason} (${brk.durationMinutes} min)`} className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold border transition-all select-none cursor-help ${
                 isNext
                   ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/25'
                   : isPast
@@ -350,7 +360,10 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule }) {
                   : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
               }`}>
                 {isNext && <span className="animate-pulse text-[8px] mr-0.5">⚡</span>}
-                {fmtTime(brk.time)}
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="truncate max-w-[120px]">{brk.reason}</span>
+                  <span className="text-[8px] opacity-70 font-medium">{fmtTime(brk.time)} · {brk.durationMinutes} min</span>
+                </div>
               </div>
             )
           })}
@@ -365,12 +378,14 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule }) {
               const h = brk.time.getHours()
               const m = brk.time.getMinutes()
               const breakH = h + m / 60
-              const isPast = breakH + 0.25 < currentHDec
+              const durationFrac = (brk.durationMinutes || 15) / 60
+              const isPast = breakH + durationFrac < currentHDec
               const isNext = nextBreak && h === nextBreak.time.getHours() && m === nextBreak.time.getMinutes()
               const left   = ((breakH - workStartHour) / totalHours) * 100
+              const width  = brk.type === 'LUNCH' ? 'w-3' : 'w-1.5'
               return (
                 <div key={`timeline-${idx}`}
-                  className={`absolute h-full w-2 -translate-x-1/2 rounded-sm ${
+                  className={`absolute h-full ${width} -translate-x-1/2 rounded-sm ${
                     isPast ? 'bg-slate-600' :
                     isNext ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.9)]' :
                     'bg-emerald-400'
@@ -647,7 +662,8 @@ export default function ProgramPage() {
     const currentHDecimal = today.getHours() + today.getMinutes() / 60;
     return smartBreaks.find(b => {
       const breakHDecimal = b.time.getHours() + b.time.getMinutes() / 60;
-      return breakHDecimal + 0.25 >= currentHDecimal;
+      const durationFrac = (b.durationMinutes || 15) / 60;
+      return breakHDecimal + durationFrac >= currentHDecimal;
     })
   }, [smartBreaks])
 

@@ -168,16 +168,14 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
         resultBreaks.push({
           type: 'FATIGUE_RECOVERY',
           time: breakTime,
-          reason: `Recuperare post-efort intensiv (${Math.round(totalDurationMins)} min continue)`
+          durationMinutes: 3,
+          reason: 'Recuperare post-efort intensiv'
         })
       }
     }
   })
 
-  // Target 6 breaks always
-  let neededRegularBreaks = 6 - resultBreaks.length
-
-  // Calculate free slots for regular breaks
+  // Calculate free slots for breaks (>= 3 min gap)
   const freeSlots = []
   let cursor = bufferStart
 
@@ -186,34 +184,92 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
     if (mStart > cursor && cursor < bufferEnd) {
       const slotEnd = mStart < bufferEnd ? mStart : bufferEnd
       const gapMin = (slotEnd - cursor) / 60000
-      if (gapMin >= 15) freeSlots.push({ start: new Date(cursor), end: new Date(slotEnd) })
+      if (gapMin >= 3) freeSlots.push({ start: new Date(cursor), end: new Date(slotEnd) })
     }
     if (new Date(m.end) > cursor) cursor = new Date(m.end)
   })
 
   if (cursor < bufferEnd) {
     const gapMin = (bufferEnd - cursor) / 60000
-    if (gapMin >= 15) freeSlots.push({ start: new Date(cursor), end: new Date(bufferEnd) })
+    if (gapMin >= 3) freeSlots.push({ start: new Date(cursor), end: new Date(bufferEnd) })
   }
+
+  // --- Lunch Scheduling Algorithm ---
+  let bestLunchTime = null;
+  let bestLunchDiff = Infinity;
+  const lunchIdeal = new Date(dateContext); lunchIdeal.setHours(12, 30, 0, 0);
+  const lunchMin = new Date(dateContext); lunchMin.setHours(10, 30, 0, 0);
+  const lunchMax = new Date(dateContext); lunchMax.setHours(15, 30, 0, 0);
+
+  // Try primary lunch window (10:30 to 15:30)
+  for (let slot of freeSlots) {
+    const gap = (slot.end - slot.start) / 60000;
+    if (gap >= 15) {
+      let sCursor = new Date(slot.start);
+      const sMax = new Date(slot.end.getTime() - 15 * 60000);
+      while (sCursor <= sMax) {
+        const sCursorEnd = new Date(sCursor.getTime() + 15 * 60000);
+        if (sCursor >= lunchMin && sCursorEnd <= lunchMax) {
+          const diff = Math.abs(sCursor - lunchIdeal) / 60000;
+          if (diff < bestLunchDiff) {
+            bestLunchDiff = diff;
+            bestLunchTime = new Date(sCursor);
+          }
+        }
+        sCursor = new Date(sCursor.getTime() + 5 * 60000);
+      }
+    }
+  }
+
+  // If no lunch found in primary bounds, search for earliest possible lunch after 15:30
+  if (!bestLunchTime) {
+    for (let slot of freeSlots) {
+      const gap = (slot.end - slot.start) / 60000;
+      if (gap >= 15) {
+        let sCursor = new Date(slot.start);
+        const sMax = new Date(slot.end.getTime() - 15 * 60000);
+        while (sCursor <= sMax) {
+          if (sCursor >= lunchMax) { // >= 15:30
+            if (!bestLunchTime || sCursor < bestLunchTime) {
+              bestLunchTime = new Date(sCursor);
+            }
+          }
+          sCursor = new Date(sCursor.getTime() + 5 * 60000);
+        }
+      }
+    }
+  }
+
+  if (bestLunchTime) {
+    resultBreaks.push({
+      type: 'LUNCH',
+      time: bestLunchTime,
+      durationMinutes: 15,
+      reason: 'Pauză de Masă'
+    });
+  }
+
+  // Target 6 breaks always
+  let neededRegularBreaks = 6 - resultBreaks.length
 
   const isValidGap = (proposedTime) => resultBreaks.every(b => Math.abs(b.time - proposedTime) / 60000 >= 45)
 
   // Distribute neededRegularBreaks over freeSlots
-  // A simple linear pass logic using 45 minute steps inside valid free slots
   for (let slot of freeSlots) {
     let slotCursor = new Date(slot.start.getTime() + 5 * 60000); // Start 5 mins into the free slot
-    // The break is 15 min long. Ensure it ends before the free slot ends.
-    while (slotCursor <= new Date(slot.end.getTime() - 15 * 60000) && neededRegularBreaks > 0) {
+    // Regular break is 3 min long.
+    while (slotCursor <= new Date(slot.end.getTime() - 3 * 60000) && neededRegularBreaks > 0) {
       if (isValidGap(slotCursor)) {
         resultBreaks.push({
           type: 'REGULAR',
           time: new Date(slotCursor),
-          reason: 'Pauză de distribuție activă'
+          durationMinutes: 3,
+          reason: 'Pauză scurtă de revigorare'
         })
         neededRegularBreaks--;
         slotCursor = new Date(slotCursor.getTime() + 45 * 60000); // Jump forward 45 minutes
       } else {
-        slotCursor = new Date(slotCursor.getTime() + 5 * 60000); // Increment slowly to find a valid spot
+        slotCursor = new Date(slotCursor.getTime() + 5 * 60000); // Increment slowly
       }
     }
   }

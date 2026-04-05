@@ -74,16 +74,14 @@ public class SmartBreakService {
                     resultBreaks.add(new SmartBreak(
                             "FATIGUE_RECOVERY",
                             breakTime,
-                            "Recuperare post-efort intensiv (" + totalDurationMins + " min continue)"
+                            3,
+                            "Recuperare post-efort intensiv"
                     ));
                 }
             }
         }
 
-        // Target 6 breaks always
-        int neededRegularBreaks = 6 - resultBreaks.size();
-
-        // Calculate free slots for regular breaks
+        // Calculate free slots for breaks (now looking for >= 3 min gaps instead of 15)
         List<TimeSlot> freeSlots = new ArrayList<>();
         LocalTime cursor = bufferStart;
 
@@ -94,7 +92,7 @@ public class SmartBreakService {
             if (mStart.isAfter(cursor) && cursor.isBefore(bufferEnd)) {
                 LocalTime slotEnd = mStart.isBefore(bufferEnd) ? mStart : bufferEnd;
                 long gapMin = ChronoUnit.MINUTES.between(cursor, slotEnd);
-                if (gapMin >= 15) {
+                if (gapMin >= 3) {
                     freeSlots.add(new TimeSlot(cursor, slotEnd));
                 }
             }
@@ -105,22 +103,74 @@ public class SmartBreakService {
 
         if (cursor.isBefore(bufferEnd)) {
             long gapMin = ChronoUnit.MINUTES.between(cursor, bufferEnd);
-            if (gapMin >= 15) {
-                freeSlots.add(new TimeSlot(cursor, bufferEnd));
+            if (gapMin >= 3) freeSlots.add(new TimeSlot(cursor, bufferEnd));
+        }
+
+        // --- Lunch Scheduling Algorithm ---
+        LocalTime bestLunchTime = null;
+        long bestLunchDiff = Long.MAX_VALUE;
+        LocalTime lunchIdeal = LocalTime.of(12, 30);
+        LocalTime lunchMin = LocalTime.of(10, 30);
+        LocalTime lunchMax = LocalTime.of(15, 30);
+
+        // Try primary lunch window (10:30 to 15:30)
+        for (TimeSlot slot : freeSlots) {
+            long gap = ChronoUnit.MINUTES.between(slot.start, slot.end);
+            if (gap >= 15) {
+                // Find all valid 15-minute start times in this slot
+                LocalTime sCursor = slot.start;
+                LocalTime sMax = slot.end.minusMinutes(15);
+                while (!sCursor.isAfter(sMax)) {
+                    if (!sCursor.isBefore(lunchMin) && !sCursor.plusMinutes(15).isAfter(lunchMax)) {
+                        long diff = Math.abs(ChronoUnit.MINUTES.between(sCursor, lunchIdeal));
+                        if (diff < bestLunchDiff) {
+                            bestLunchDiff = diff;
+                            bestLunchTime = sCursor;
+                        }
+                    }
+                    sCursor = sCursor.plusMinutes(5); // 5 min increments
+                }
             }
         }
+
+        // If no lunch found in primary bounds, search for earliest possible lunch after 15:30
+        if (bestLunchTime == null) {
+            for (TimeSlot slot : freeSlots) {
+                long gap = ChronoUnit.MINUTES.between(slot.start, slot.end);
+                if (gap >= 15) {
+                    LocalTime sCursor = slot.start;
+                    LocalTime sMax = slot.end.minusMinutes(15);
+                    while (!sCursor.isAfter(sMax)) {
+                        if (!sCursor.isBefore(lunchMax)) { // Must be >= 15:30
+                             if (bestLunchTime == null || sCursor.isBefore(bestLunchTime)) {
+                                 bestLunchTime = sCursor;
+                             }
+                        }
+                        sCursor = sCursor.plusMinutes(5);
+                    }
+                }
+            }
+        }
+
+        if (bestLunchTime != null) {
+            resultBreaks.add(new SmartBreak("LUNCH", bestLunchTime, 15, "Pauză de Masă"));
+        }
+        
+        // Target 6 breaks always
+        int neededRegularBreaks = 6 - resultBreaks.size();
 
         // Distribute neededRegularBreaks over freeSlots
         for (TimeSlot slot : freeSlots) {
             LocalTime slotCursor = slot.start.plusMinutes(5);
-            LocalTime maxSlotCursor = slot.end.minusMinutes(5);
+            LocalTime maxSlotCursor = slot.end.minusMinutes(3); // 3 minute regular breaks
             
-            while (slotCursor.isBefore(maxSlotCursor) && neededRegularBreaks > 0) {
+            while (!slotCursor.isAfter(maxSlotCursor) && neededRegularBreaks > 0) {
                 if (isValidGap(slotCursor, resultBreaks)) {
                     resultBreaks.add(new SmartBreak(
                             "REGULAR",
                             slotCursor,
-                            "Pauză de distribuție activă"
+                            3,
+                            "Pauză scurtă de revigorare"
                     ));
                     neededRegularBreaks--;
                     slotCursor = slotCursor.plusMinutes(45);
@@ -138,6 +188,7 @@ public class SmartBreakService {
     private boolean isValidGap(LocalTime proposedTime, List<SmartBreak> currentBreaks) {
         for (SmartBreak b : currentBreaks) {
             long diffMins = Math.abs(ChronoUnit.MINUTES.between(b.getTime(), proposedTime));
+            // Prevent 3-min breaks from clashing with the 15-min lunch break boundaries
             if (diffMins < 45) {
                 return false;
             }
