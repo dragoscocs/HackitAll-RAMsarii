@@ -351,6 +351,11 @@ export function CalendarProvider({ children }) {
     setSnoozedUntil(new Date(base.getTime() + minutes * 60000))
   }
 
+  // ── Mood override (set after break slider) ──────────────────────────────
+  const [moodOverride, setMoodOverride] = useState(null) // 0-100 | null
+  const [pendingAiIntervention, setPendingAiIntervention] = useState(null) // { score, userName, sliderValue } | null
+  const [recoveryBreakTime, setRecoveryBreakTime] = useState(null) // Date | null — extra break added when mood is low
+
   const nextWeek = () => setSelectedWeekOffset(o => Math.min(3, o + 1))
   const prevWeek = () => setSelectedWeekOffset(o => Math.max(0, o - 1))
 
@@ -438,11 +443,6 @@ export function CalendarProvider({ children }) {
   const moodFactors = useMemo(() => getMoodFactors(todayEvents, breaksToday), [todayEvents, breaksToday])
   const moodLabel = useMemo(() => getMoodLabel(moodScore), [moodScore])
   const moodReco = useMemo(() => getMoodRecommendation(moodScore), [moodScore])
-
-  // ── Mood override (set after break slider) ──────────────────────────────
-  const [moodOverride, setMoodOverride] = useState(null) // 0-100 | null
-  const [pendingAiIntervention, setPendingAiIntervention] = useState(null) // { score, userName, sliderValue } | null
-  const [recoveryBreakTime, setRecoveryBreakTime] = useState(null) // Date | null — extra break added when mood is low
 
   // ── Morning mood (persisted per day via localStorage + custom event) ────
   const [morningMood, setMorningMoodState] = useState(() => {
