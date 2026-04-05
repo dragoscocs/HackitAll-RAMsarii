@@ -5,6 +5,7 @@ import { PrivacyProvider } from './context/PrivacyContext'
 import { SportLobbyProvider } from './context/SportLobbyContext'
 import LegalFooter from './components/LegalFooter'
 import PwaInstallPrompt from './components/PwaInstallPrompt'
+import DemoControls from './components/DemoControls'
 import ScrollToTop from './components/ScrollToTop'
 import CookieConsent from './components/CookieConsent'
 import AuthPage from './pages/AuthPage'
@@ -59,6 +60,7 @@ export default function App() {
             </div>
             <CookieConsent />
             <PwaInstallPrompt />
+            <DemoControls />
           </BrowserRouter>
           </SportLobbyProvider>
         </CalendarProvider>
