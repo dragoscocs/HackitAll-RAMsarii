@@ -83,54 +83,88 @@ function getInitials(name = '') {
 /* ── Flip stat card ──────────────────────────────────────────────── */
 const DEFINITIONS = {
   streak:  'Numărul de zile consecutive în care ai luat cel puțin o pauză activă. Cu cât streak-ul e mai lung, cu atât ești mai consecvent în obiceiurile tale de wellbeing.',
-  mood:    'Scor calculat automat pe baza ședințelor din calendar, pauzelor luate și activităților sportive. Reflectă echilibrul tău energetic la locul de muncă.',
-  matches: 'Activitățile sportive cu colegii tăi luna aceasta. Sportul în echipă construiește conexiuni autentice și îmbunătățește moralul la birou.',
-  breaks:  'Pauzele active luate azi. Obiectivul recomandat: 5 pauze de 3 minute pe zi — cresc concentrarea cu până la 40% și reduc oboseala mentală.',
+  mood:    'Scor calculat pe baza ședințelor din calendar, pauzelor luate și activităților sportive. Reflectă echilibrul tău energetic la locul de muncă.',
+  matches: 'Activitățile sportive cu colegii tăi luna aceasta. Sportul în echipă construiește conexiuni și îmbunătățește moralul la birou.',
+  breaks:  'Pauzele active luate azi. Obiectiv: 5 pauze × 3 minute — cresc concentrarea cu 40% și reduc oboseala mentală.',
 }
 
-const COLOR_MAP = {
-  emerald: { text: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'rgba(52,211,153,0.2)' },
-  violet:  { text: 'text-violet-400',  bg: 'bg-violet-400/10',  border: 'rgba(167,139,250,0.2)' },
-  sky:     { text: 'text-sky-400',     bg: 'bg-sky-400/10',     border: 'rgba(56,189,248,0.2)'  },
-  amber:   { text: 'text-amber-400',   bg: 'bg-amber-400/10',   border: 'rgba(251,191,36,0.2)'  },
+const CARD_STYLES = {
+  emerald: { grad: 'from-emerald-500 to-teal-500',   num: '#34d399', glow: '#10b981', border: 'rgba(52,211,153,0.2)',  iconBg: 'bg-emerald-500/12' },
+  violet:  { grad: 'from-violet-500 to-purple-500',  num: '#a78bfa', glow: '#8b5cf6', border: 'rgba(167,139,250,0.2)', iconBg: 'bg-violet-500/12'  },
+  sky:     { grad: 'from-sky-500 to-blue-500',       num: '#38bdf8', glow: '#0ea5e9', border: 'rgba(56,189,248,0.2)',  iconBg: 'bg-sky-500/12'     },
+  amber:   { grad: 'from-amber-500 to-orange-500',   num: '#fbbf24', glow: '#f59e0b', border: 'rgba(251,191,36,0.2)',  iconBg: 'bg-amber-500/12'   },
 }
 
 function FlipCard({ icon, label, target, unit, sub, color, delay, definition }) {
   const [flipped, setFlipped] = useState(false)
   const value = useCountUp(target)
-  const c = COLOR_MAP[color]
+  const s = CARD_STYLES[color]
 
   return (
     <div
       className="animate-fade-in cursor-pointer select-none"
-      style={{ perspective: '1000px', animationDelay: `${delay}ms`, minHeight: '164px' }}
+      style={{ perspective: '1000px', animationDelay: `${delay}ms`, height: '172px' }}
       onClick={() => setFlipped(f => !f)}
-      title="Apasă pentru definiție"
     >
       <div style={{
-        position: 'relative', height: '164px', transformStyle: 'preserve-3d',
-        transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+        position: 'relative', height: '172px', transformStyle: 'preserve-3d',
+        transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
       }}>
-        {/* Front */}
-        <div className="absolute inset-0 bg-surface-card rounded-2xl p-5 flex flex-col gap-1 shadow-xl"
-          style={{ backfaceVisibility: 'hidden', border: `1px solid ${c.border}` }}>
-          <div className="flex items-center justify-between">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${c.bg}`}>{icon}</div>
-            <span className="text-[10px] text-slate-700 font-medium select-none">↻ detalii</span>
+
+        {/* ── Front ── */}
+        <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl"
+          style={{ backfaceVisibility: 'hidden', border: `1px solid ${s.border}`, background: '#0c0d12' }}>
+          {/* Ambient glow */}
+          <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full opacity-25 blur-2xl pointer-events-none"
+            style={{ background: s.glow }} />
+          {/* Gradient top bar */}
+          <div className={`h-[3px] w-full bg-gradient-to-r ${s.grad}`} />
+
+          <div className="p-5 flex flex-col h-[calc(100%-3px)]">
+            {/* Icon + label */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base ${s.iconBg} border`}
+                  style={{ borderColor: s.border }}>
+                  {icon}
+                </div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">{label}</span>
+              </div>
+              <span className="text-[9px] text-slate-700 font-medium">↻ flip</span>
+            </div>
+
+            {/* Big value */}
+            <p className="text-[2.6rem] font-black tabular-nums leading-none mt-auto"
+              style={{ color: s.num, textShadow: `0 0 24px ${s.glow}55` }}>
+              {value}<span className="text-xl font-bold opacity-60 ml-0.5">{unit}</span>
+            </p>
+
+            {/* Sub */}
+            <p className="text-[11px] text-slate-500 mt-1.5 leading-tight truncate">{sub}</p>
           </div>
-          <p className={`text-3xl font-bold mt-1 tabular-nums ${c.text}`}>{value}{unit}</p>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
-          <p className="text-xs text-slate-500 mt-0.5">{sub}</p>
         </div>
-        {/* Back */}
-        <div className="absolute inset-0 bg-surface-card rounded-2xl p-5 flex flex-col justify-center gap-3 shadow-xl"
-          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', border: `1px solid ${c.border}` }}>
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xl ${c.bg}`}>{icon}</div>
-          <p className={`text-sm font-bold ${c.text}`}>{label}</p>
-          <p className="text-xs text-slate-400 leading-relaxed">{definition}</p>
-          <span className="text-[10px] text-slate-600 mt-auto">↻ apasă pentru a reveni</span>
+
+        {/* ── Back ── */}
+        <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', border: `1px solid ${s.border}`, background: '#0c0d12' }}>
+          <div className={`h-[3px] w-full bg-gradient-to-r ${s.grad}`} />
+          <div className="p-4 flex flex-col gap-2.5 h-[calc(100%-3px)]">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${s.iconBg} border`}
+                style={{ borderColor: s.border }}>
+                {icon}
+              </div>
+              <p className="text-xs font-bold" style={{ color: s.num }}>{label}</p>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed flex-1 overflow-hidden"
+              style={{ display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {definition}
+            </p>
+            <span className="text-[9px] text-slate-700 shrink-0">↻ apasă pentru a reveni</span>
+          </div>
         </div>
+
       </div>
     </div>
   )
@@ -413,6 +447,10 @@ export default function Dashboard() {
     : displayMoodScore >= 65 ? 'Bine 😊'
     : displayMoodScore >= 50 ? 'Moderat 😐'
     : 'Obositor 😔'
+  const moodIcon = displayMoodScore >= 80 ? '🌟'
+    : displayMoodScore >= 65 ? '😊'
+    : displayMoodScore >= 50 ? '😐'
+    : '😔'
 
   const workLocationBadge = workLocation === 'HOME'
     ? { icon: Home,      label: 'Acasă',    cls: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' }
@@ -514,7 +552,7 @@ export default function Dashboard() {
             color="emerald" delay={0} definition={DEFINITIONS.streak}
           />
           <FlipCard
-            icon="😊" label="Mood Score" target={displayMoodScore} unit="/100"
+            icon={moodIcon} label="Mood Score" target={displayMoodScore} unit="/100"
             sub={displayMoodLabel}
             color="violet" delay={100} definition={DEFINITIONS.mood}
           />
