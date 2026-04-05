@@ -88,7 +88,7 @@ public class MatchmakingService {
                 cityContext, employeeList.toString()
         );
 
-        String aiJsonResponse = aiService.getAiRecommendation(prompt);
+        String aiJsonResponse = aiService.getMatchmakingRecommendation(prompt);
         List<MatchResponse> results = parseMatchResponses(aiJsonResponse);
 
         // ── Enrich with city from employee pool (fallback if AI omitted city) ─

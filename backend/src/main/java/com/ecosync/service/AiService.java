@@ -15,6 +15,7 @@ import com.ecosync.model.SmartBreakResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.Instant;
 
 @Service
 public class AiService {
@@ -22,12 +23,28 @@ public class AiService {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
+    @Value("${gemini.api.key.matchmaking:}")
+    private String geminiApiKeyMatchmaking;
+
+    @Value("${gemini.api.key.chat:}")
+    private String geminiApiKeyChat;
+
     @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent}")
     private String geminiApiUrl;
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, String> responseCache = new ConcurrentHashMap<>();
+
+    // ── Rate-limit & cache for break suggestions ─────────────────────────────
+    private volatile Instant lastGeminiCall = Instant.EPOCH;
+    private static final long MIN_CALL_INTERVAL_MS = 5_000; // 5s between calls
+    private final Map<String, CachedResponse> breakCache = new ConcurrentHashMap<>();
+    private static final long BREAK_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+    private record CachedResponse(String text, long timestamp) {
+        boolean isExpired() { return System.currentTimeMillis() - timestamp > BREAK_CACHE_TTL_MS; }
+    }
 
     private static final String SYSTEM_PROMPT = "SYSTEM: Ești SyncFit, asistent AI corporate. " +
             "REGULI: " +
@@ -51,7 +68,7 @@ public class AiService {
         if (imageBase64 != null && !imageBase64.isBlank()) {
             String textPrompt = buildConversationContext(history != null ? history : List.of());
             try {
-                return extractAndCleanJson(callGeminiMultimodal(textPrompt, imageBase64));
+                return extractAndCleanJson(callGeminiMultimodal(textPrompt, imageBase64, geminiApiKeyChat));
             } catch (Exception e) {
                 System.err.println("[ChatError-Multimodal] " + e.getClass().getSimpleName() + ": " + e.getMessage());
                 return "Ne pare rău, nu pot analiza imaginea acum. Încearcă din nou!";
@@ -71,7 +88,7 @@ public class AiService {
         }
 
         try {
-            String rawResponse = callGeminiApi(buildConversationContext(history));
+            String rawResponse = callGeminiApi(buildConversationContext(history), null, geminiApiKeyChat);
             String reply = extractAndCleanJson(rawResponse);
             responseCache.put(cacheKey, reply);
             return reply;
@@ -90,10 +107,28 @@ public class AiService {
     }
 
     public String getAiRecommendation(String prompt) {
+        // ── Check break cache first ──────────────────────────────────────────
+        String cacheKey = prompt.length() > 80 ? prompt.substring(0, 80) : prompt;
+        CachedResponse cached = breakCache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
+            System.out.println("[AiService] Break suggestion served from cache (saves 1 prompt)");
+            return cached.text();
+        }
+
         if (geminiApiKey != null && !geminiApiKey.isEmpty()) {
+            // ── Rate-limit: enforce minimum interval between calls ───────────
+            long elapsed = Instant.now().toEpochMilli() - lastGeminiCall.toEpochMilli();
+            if (elapsed < MIN_CALL_INTERVAL_MS) {
+                System.out.println("[AiService] Rate-limited (" + elapsed + "ms since last call). Using fallback.");
+                return getMockAiResponse(prompt);
+            }
             try {
+                lastGeminiCall = Instant.now();
                 String rawResponse = callGeminiApi(prompt);
-                return extractAndCleanJson(rawResponse);
+                String result = extractAndCleanJson(rawResponse);
+                // Cache the successful result
+                breakCache.put(cacheKey, new CachedResponse(result, System.currentTimeMillis()));
+                return result;
             } catch (Exception e) {
                 System.err.println("[AiService] Gemini API error, using fallback: " + e.getMessage());
             }
@@ -113,11 +148,28 @@ public class AiService {
         return text;
     }
 
-    private String callGeminiApi(String prompt) {
-        return callGeminiApi(prompt, null);
+    public String getMatchmakingRecommendation(String prompt) {
+        if (geminiApiKeyMatchmaking != null && !geminiApiKeyMatchmaking.isEmpty()) {
+            try {
+                String rawResponse = callGeminiApi(prompt, null, geminiApiKeyMatchmaking);
+                return extractAndCleanJson(rawResponse);
+            } catch (Exception e) {
+                System.err.println("[AiService] Matchmaking Gemini API error: " + e.getMessage());
+            }
+        }
+        return getMockAiResponse(prompt);
     }
 
+    private String callGeminiApi(String prompt) {
+        return callGeminiApi(prompt, null, geminiApiKey);
+    }
+
+
     private String callGeminiApi(String prompt, Map<String, Object> generationConfig) {
+        return callGeminiApi(prompt, generationConfig, geminiApiKey);
+    }
+
+    private String callGeminiApi(String prompt, Map<String, Object> generationConfig, String apiKey) {
         Map<String, Object> requestBody;
         if (generationConfig != null) {
             requestBody = Map.of(
@@ -129,7 +181,7 @@ public class AiService {
         }
 
         return webClient.post()
-                .uri(geminiApiUrl + "?key=" + geminiApiKey)
+                .uri(geminiApiUrl + "?key=" + apiKey)
                 .header("Content-Type", "application/json")
                 .body(Mono.just(requestBody), Map.class)
                 .retrieve()
@@ -204,7 +256,7 @@ public class AiService {
      * inlineData part,
      * as required by the GenerativeLanguage API spec.
      */
-    private String callGeminiMultimodal(String textPrompt, String imageBase64) {
+    private String callGeminiMultimodal(String textPrompt, String imageBase64, String apiKey) {
         Map<String, Object> textPart = Map.of("text", textPrompt);
         Map<String, Object> imagePart = Map.of(
                 "inlineData", Map.of(
@@ -215,7 +267,7 @@ public class AiService {
                         Map.of("parts", new Object[] { textPart, imagePart })
                 });
         return webClient.post()
-                .uri(geminiApiUrl + "?key=" + geminiApiKey)
+                .uri(geminiApiUrl + "?key=" + apiKey)
                 .header("Content-Type", "application/json")
                 .body(Mono.just(requestBody), Map.class)
                 .retrieve()
