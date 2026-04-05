@@ -11,14 +11,14 @@ const SPORT_ICONS = {
 const ALL_SPORTS = ['Padel', 'Tennis', 'Ping Pong', 'Badminton', 'Football', 'Yoga', 'Cycling', 'Ski', 'Running']
 
 const MOCK_REQUESTS = [
-  { id: 1, name: 'Andrei Popescu',   activity: 'Padel',     avatar: 'AP', time: '18:00', color: 'from-violet-500 to-purple-700' },
-  { id: 2, name: 'Ioana Ionescu',    activity: 'Ping Pong', avatar: 'II', time: '13:00', color: 'from-sky-500 to-blue-700'     },
-  { id: 3, name: 'Elena Stancu',     activity: 'Badminton', avatar: 'ES', time: '19:00', color: 'from-emerald-500 to-teal-700' },
-  { id: 4, name: 'Radu Mihalcea',    activity: 'Tennis',    avatar: 'RM', time: '17:30', color: 'from-orange-500 to-amber-700' },
-  { id: 5, name: 'Maria Constantin', activity: 'Yoga',      avatar: 'MC', time: '12:00', color: 'from-pink-500 to-rose-700'   },
-  { id: 6, name: 'Bogdan Dumitrescu',activity: 'Football',  avatar: 'BD', time: '16:00', color: 'from-green-500 to-emerald-700'},
-  { id: 7, name: 'Sorin Munteanu',   activity: 'Cycling',   avatar: 'SM', time: '07:30', color: 'from-yellow-500 to-orange-600'},
-  { id: 8, name: 'Cristina Popa',    activity: 'Running',   avatar: 'CP', time: '06:30', color: 'from-red-500 to-pink-700'    },
+  { id: 1, name: 'Andrei Popescu', activity: 'Padel', avatar: 'AP', time: '18:00', color: 'from-violet-500 to-purple-700' },
+  { id: 2, name: 'Ioana Ionescu', activity: 'Ping Pong', avatar: 'II', time: '13:00', color: 'from-sky-500 to-blue-700' },
+  { id: 3, name: 'Elena Stancu', activity: 'Badminton', avatar: 'ES', time: '19:00', color: 'from-emerald-500 to-teal-700' },
+  { id: 4, name: 'Radu Mihalcea', activity: 'Tennis', avatar: 'RM', time: '17:30', color: 'from-orange-500 to-amber-700' },
+  { id: 5, name: 'Maria Constantin', activity: 'Yoga', avatar: 'MC', time: '12:00', color: 'from-pink-500 to-rose-700' },
+  { id: 6, name: 'Bogdan Dumitrescu', activity: 'Football', avatar: 'BD', time: '16:00', color: 'from-green-500 to-emerald-700' },
+  { id: 7, name: 'Sorin Munteanu', activity: 'Cycling', avatar: 'SM', time: '07:30', color: 'from-yellow-500 to-orange-600' },
+  { id: 8, name: 'Cristina Popa', activity: 'Running', avatar: 'CP', time: '06:30', color: 'from-red-500 to-pink-700' },
 ]
 
 function toDateStr(d) {
@@ -27,25 +27,25 @@ function toDateStr(d) {
 
 export default function MatchesPage() {
   const { user, recordMatchInContext } = useAuth()
-  const navigate      = useNavigate()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const initialSport = searchParams.get('sport') || null
 
   const [selectedSport, setSelectedSport] = useState(initialSport)
-  const [matches,       setMatches]       = useState([])
-  const [loading,       setLoading]       = useState(false)
-  const [hasFetched,    setHasFetched]    = useState(false)
-  const [fetchError,    setFetchError]    = useState(null)
+  const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [hasFetched, setHasFetched] = useState(false)
+  const [fetchError, setFetchError] = useState(null)
 
   // Post form
-  const [showPost, setShowPost]   = useState(false)
+  const [showPost, setShowPost] = useState(false)
   const [postSport, setPostSport] = useState(initialSport ?? '')
-  const [postDate,  setPostDate]  = useState(toDateStr(new Date()))
-  const [posting,   setPosting]   = useState(false)
-  const [postDone,  setPostDone]  = useState(false)
+  const [postDate, setPostDate] = useState(toDateStr(new Date()))
+  const [posting, setPosting] = useState(false)
+  const [postDone, setPostDone] = useState(false)
 
-  const today   = toDateStr(new Date())
+  const today = toDateStr(new Date())
   const maxDate = toDateStr(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
 
   const fetchMatches = async (sport) => {
@@ -63,12 +63,17 @@ export default function MatchesPage() {
     }
   }
 
+  const [visibleCount, setVisibleCount] = useState(5)
+
   // Auto-search if sport comes from URL
   useEffect(() => {
     if (initialSport) fetchMatches(initialSport)
   }, [])
 
-  const handleSearch = () => fetchMatches(selectedSport)
+  const handleSearch = () => {
+    setVisibleCount(5)
+    fetchMatches(selectedSport)
+  }
 
   const handlePost = async () => {
     if (!postSport || !postDate) return
@@ -83,13 +88,17 @@ export default function MatchesPage() {
       setPostDone(true)
       setShowPost(false)
       setTimeout(() => setPostDone(false), 4000)
-    } catch {}
+    } catch { }
     setPosting(false)
   }
 
   const filteredRequests = selectedSport
     ? MOCK_REQUESTS.filter(r => r.activity === selectedSport)
     : MOCK_REQUESTS
+
+  const sortedMatches = [...(matches || [])].sort((a, b) => b.matchScore - a.matchScore)
+  const paginatedMatches = sortedMatches.slice(0, visibleCount)
+  const hasMore = sortedMatches.length > visibleCount
 
   return (
     <div className="min-h-screen relative">
@@ -103,7 +112,7 @@ export default function MatchesPage() {
 
       {/* ── Header ── */}
       <header className="border-b border-surface-border bg-surface-card/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <button
             onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium"
@@ -127,7 +136,7 @@ export default function MatchesPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6 animate-fade-in">
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6 animate-fade-in">
 
         {/* ── Post activity panel ── */}
         {showPost && (
@@ -177,7 +186,7 @@ export default function MatchesPage() {
         )}
 
         {/* ── Sport filter ── */}
-        <div className="card flex flex-col gap-4">
+        <div className="card flex flex-col gap-4 max-w-5xl mx-auto">
           <h2 className="text-sm font-semibold text-white flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-sky-500/15 flex items-center justify-center text-xs">🔍</span>
             Caută parteneri de sport
@@ -186,11 +195,10 @@ export default function MatchesPage() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setSelectedSport(null)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
-                !selectedSport
-                  ? 'bg-brand/20 border-brand/50 text-white shadow-sm shadow-brand/20'
-                  : 'bg-surface border-surface-border text-slate-400 hover:border-brand/30 hover:text-slate-300'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 ${!selectedSport
+                ? 'bg-brand/20 border-brand/50 text-white shadow-sm shadow-brand/20'
+                : 'bg-surface border-surface-border text-slate-400 hover:border-brand/30 hover:text-slate-300'
+                }`}
             >
               🏅 Toate
             </button>
@@ -198,11 +206,10 @@ export default function MatchesPage() {
               <button
                 key={sport}
                 onClick={() => setSelectedSport(s => s === sport ? null : sport)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 ${
-                  selectedSport === sport
-                    ? 'bg-brand/20 border-brand/50 text-white shadow-sm shadow-brand/20'
-                    : 'bg-surface border-surface-border text-slate-400 hover:border-brand/30 hover:text-slate-300'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 ${selectedSport === sport
+                  ? 'bg-brand/20 border-brand/50 text-white shadow-sm shadow-brand/20'
+                  : 'bg-surface border-surface-border text-slate-400 hover:border-brand/30 hover:text-slate-300'
+                  }`}
               >
                 {SPORT_ICONS[sport] ?? '🏅'} {sport}
               </button>
@@ -223,9 +230,9 @@ export default function MatchesPage() {
         </div>
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
-          {/* Active requests */}
+          {/* Left panel: Active requests */}
           <div className="lg:col-span-2 card flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white flex items-center gap-2">
@@ -270,8 +277,8 @@ export default function MatchesPage() {
             </div>
           </div>
 
-          {/* AI results */}
-          <div className="lg:col-span-3 flex flex-col gap-4">
+          {/* Right panel: AI results (Independently scrolling) */}
+          <div className="lg:col-span-3 flex flex-col gap-4 lg:sticky lg:top-24 max-h-[calc(100vh-140px)] overflow-y-auto pr-2 custom-scrollbar">
             {fetchError && (
               <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-2xl p-4">
                 ⚠️ {fetchError}
@@ -296,30 +303,42 @@ export default function MatchesPage() {
             {loading && (
               <div className="card flex flex-col gap-4 animate-pulse">
                 <div className="h-5 w-48 bg-surface-border rounded" />
-                {[1,2,3].map(i => (
+                {[1, 2, 3].map(i => (
                   <div key={i} className="h-20 bg-surface-border rounded-xl" />
                 ))}
               </div>
             )}
 
             {hasFetched && !loading && (
-              <div className="card flex flex-col gap-4 animate-slide-up">
-                <div className="flex items-center gap-2">
-                  <span className="badge bg-brand/10 text-brand-light">✨ AI</span>
-                  <p className="text-sm font-semibold text-white">
-                    Top compatibili · {SPORT_ICONS[selectedSport] ?? '🏅'} {selectedSport}
-                  </p>
+              <div className="flex flex-col gap-4 animate-slide-up pb-8">
+                <div className="flex items-center justify-between sticky top-0 py-2 bg-surface/80 backdrop-blur z-10 px-2 rounded-xl border border-surface-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="badge bg-brand/10 text-brand-light">✨ AI</span>
+                    <p className="text-sm font-semibold text-white">
+                      Top compatibili · {SPORT_ICONS[selectedSport] ?? '🏅'} {selectedSport}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">Sortat după scor descendent</span>
                 </div>
 
                 {matches.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+                  <div className="card flex flex-col items-center justify-center py-12 gap-3 text-center">
                     <span className="text-3xl">😔</span>
                     <p className="text-sm text-slate-400">Niciun match găsit pentru {selectedSport}.</p>
                     <p className="text-xs text-slate-600">Încearcă un alt sport sau postează o activitate.</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {matches.map((m, i) => <MatchCard key={i} match={m} rank={i + 1} />)}
+                    {paginatedMatches.map((m, i) => <MatchCard key={i} match={m} rank={i + 1} />)}
+
+                    {hasMore && (
+                      <button
+                        onClick={() => setVisibleCount(prev => prev + 5)}
+                        className="mt-2 w-full py-3 rounded-xl border border-surface-border bg-surface hover:bg-surface-card text-brand-light text-xs font-semibold transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                      >
+                        Vezi mai mulți colegi <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -327,37 +346,83 @@ export default function MatchesPage() {
           </div>
         </div>
       </main>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+      `}</style>
     </div>
   )
 }
 
 function MatchCard({ match, rank }) {
   const scorePercent = Math.round(match.matchScore * 100)
-  const scoreColor   = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
-  const scoreBg      = scorePercent >= 90 ? 'from-emerald-500 to-teal-500' : scorePercent >= 75 ? 'from-amber-500 to-orange-500' : 'from-slate-500 to-slate-600'
-  const initials     = match.matchedEmployeeName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  const scoreColor = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
+  const scoreBg = scorePercent >= 90 ? 'bg-emerald-500' : scorePercent >= 75 ? 'bg-amber-500' : 'bg-slate-500'
+  const initials = match.matchedEmployeeName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+
+  // Simplified tags for compact UI
+  const mockTags = ['Ping Pong', 'Badminton', 'Yoga'].slice(0, Math.floor(Math.random() * 2) + 2)
+  const mockJob = rank === 1 ? 'UX Designer' : rank === 2 ? 'Backend Dev' : 'Project Lead'
+  const mockAge = 25 + (rank * 2)
 
   return (
-    <div className="bg-surface border border-surface-border rounded-xl p-4 hover:border-brand/30 hover:bg-brand/5 transition-all duration-200">
-      <div className="flex items-start gap-3">
-        <div className="w-7 h-7 rounded-full bg-brand/15 flex items-center justify-center shrink-0 mt-0.5">
-          <span className="text-xs font-bold text-brand-light">#{rank}</span>
-        </div>
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm font-bold text-white shrink-0">
-          {initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <p className="text-sm font-semibold text-white truncate">{match.matchedEmployeeName}</p>
-            <span className={`text-base font-bold tabular-nums shrink-0 ${scoreColor}`}>{scorePercent}%</span>
+    <div className="group bg-surface-card/40 border border-surface-border/60 rounded-2xl p-4 hover:border-brand/40 hover:bg-brand/5 transition-all duration-300">
+      <div className="flex items-start gap-4">
+        {/* Avatar & Rank */}
+        <div className="relative shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-sm font-bold text-white shadow-inner group-hover:scale-105 transition-transform">
+            {initials}
           </div>
-          <div className="h-1.5 bg-surface-border rounded-full mb-2 overflow-hidden">
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-surface border-2 border-surface-border flex items-center justify-center shadow-sm">
+            <span className="text-[9px] font-black text-brand-light">#{rank}</span>
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-white truncate group-hover:text-brand-light transition-colors">{match.matchedEmployeeName}</h3>
+              <p className="text-[10px] text-slate-500 flex items-center gap-1.5 truncate">
+                {mockJob} · {mockAge} ani · 📍 {match.city || 'București'}
+              </p>
+            </div>
+            <span className={`text-base font-black tabular-nums tracking-tighter ${scoreColor}`}>{scorePercent}%</span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-1.5 w-full bg-white/5 rounded-full mb-3 overflow-hidden">
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${scoreBg} transition-all duration-700`}
+              className={`h-full rounded-full ${scoreBg} opacity-80 group-hover:opacity-100 transition-all duration-700 ease-out`}
               style={{ width: `${scorePercent}%` }}
             />
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">💡 {match.aiCustomMessage}</p>
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {mockTags.map(tag => (
+              <span key={tag} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-medium text-slate-400 group-hover:border-brand/20 group-hover:text-slate-300 transition-all">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 italic mb-4 opacity-80 group-hover:opacity-100 transition-opacity">
+            "{match.aiCustomMessage}"
+          </p>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button className="flex-1 h-8 rounded-lg border border-surface-border bg-surface hover:bg-surface-border text-white text-[10px] font-bold transition-all active:scale-95">
+              Ver profil
+            </button>
+            <button className="flex-[1.5] h-8 rounded-lg bg-brand/10 hover:bg-brand/20 border border-brand/20 text-brand-light text-[10px] font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
+              <Plus className="w-3 h-3" /> Invită
+            </button>
+          </div>
         </div>
       </div>
     </div>

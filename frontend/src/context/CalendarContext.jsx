@@ -61,7 +61,7 @@ function getMoodFactors(todayEvts, breaksToday) {
 
   return [
     { label: 'Ședințe azi', value: `${(totalMin / 60).toFixed(1)}h`, delta: -Math.min(20, Math.floor(totalMin / 30) * 2), icon: '📅' },
-    { label: 'Înapoi-în-înapoi', value: `${consecutive} pauze`, delta: -(consecutive * 4), icon: '⚡' },
+    { label: 'Back-to-back', value: `${consecutive} pauze`, delta: -(consecutive * 4), icon: '⚡' },
     { label: 'Ședințe grele', value: `${heavy} sesiuni`, delta: -(heavy * 4), icon: '🏋️' },
     { label: 'Ședințe târzii', value: `${late} după 17:00`, delta: -(late * 4), icon: '🌙' },
     { label: 'Pauze luate', value: `${breaksToday} pauze`, delta: breaksToday * 6, icon: '🌿' },
@@ -163,11 +163,11 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
 
     if (totalDurationMins >= 90) {
       const breakTime = new Date(blockEnd.getTime() + 2 * 60 * 1000)
-      
+
       // Look-ahead check: ensure we don't start a fatigue break if another meeting begins immediately
       const nextMeeting = sortedMeetings.find(m => new Date(m.start) >= blockEnd)
       const gapToNext = nextMeeting ? (new Date(nextMeeting.start) - breakTime) / 60000 : 10
-      
+
       if (breakTime >= workStart && breakTime <= workEnd && gapToNext >= 3) {
         resultBreaks.push({
           type: 'FATIGUE_RECOVERY',
@@ -216,7 +216,7 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
         if (sCursor >= lunchMin && sCursorEnd <= lunchMax) {
           const diff = Math.abs(sCursor - lunchIdeal) / 60000;
           // Check if this lunch overlaps with any existing fatigue breaks
-          const overlapsExisting = resultBreaks.some(b => 
+          const overlapsExisting = resultBreaks.some(b =>
             (sCursor < new Date(b.time.getTime() + b.durationMinutes * 60000)) &&
             (sCursorEnd > b.time)
           );
@@ -442,7 +442,7 @@ export function CalendarProvider({ children }) {
   // effectiveMood* — use slider override from PausePage when available (mood sync)
   const effectiveMoodScore = moodOverride !== null ? moodOverride : moodScore
   const effectiveMoodLabel = getMoodLabel(effectiveMoodScore)
-  const effectiveMoodReco  = getMoodRecommendation(effectiveMoodScore)
+  const effectiveMoodReco = getMoodRecommendation(effectiveMoodScore)
 
   const clearAiIntervention = () => setPendingAiIntervention(null)
 
