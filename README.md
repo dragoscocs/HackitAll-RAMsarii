@@ -1,236 +1,148 @@
-# EcoSync — HackItAll April 2026 | Echipa RAMsarii
+<div align="center">
 
-Platformă AI de wellbeing și matchmaking sportiv pentru angajați corporativi.
+<img src="frontend/public/logo.png" alt="SyncFit Logo" width="80" />
 
----
+# SyncFit
 
-## Cerinte de sistem
+### Platforma de wellbeing corporativ cu AI, pentru angajații care vor să se simtă bine la muncă
 
-| Tool | Versiune minima |
-|------|----------------|
-| Java | 17+ |
-| Maven | 3.8+ |
-| Node.js | 18+ |
-| npm | 9+ |
+[![Java](https://img.shields.io/badge/Java_17-Spring_Boot-6DB33F?style=flat-square&logo=spring&logoColor=white)](https://spring.io/)
+[![React](https://img.shields.io/badge/React_18-Vite-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/)
+[![HackItAll](https://img.shields.io/badge/HackItAll_2026-Echipa_RAMsarii-FF6B35?style=flat-square)](/)
 
-Verificare rapida:
-```bash
-java -version
-mvn -version
-node -version
-npm -version
-```
+**Construit în 24 de ore la HackItAll April 2026 — București**
+
+</div>
 
 ---
 
-## Pornire rapida
+## Ce face SyncFit?
 
-### 1. Backend (Spring Boot)
+SyncFit este o aplicație web pentru angajați din mediul corporativ care ajută la trei lucruri simple:
 
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-Serverul porneste pe **http://localhost:8080**
-
-Prima pornire dureaza ~1-2 minute (Maven descarca dependentele). La pornirile urmatoare este mult mai rapid.
-
-### 2. Frontend (React + Vite)
-
-Intr-un terminal separat:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Aplicatia se deschide la **http://localhost:5173**
+1. **Îți amintește să faci pauze** — analizează programul tău de întâlniri și îți spune când e momentul să te ridici de la birou
+2. **Îți găsește colegi pentru sport** — potrivește angajații din aceeași companie după sporturile preferate
+3. **Îți dă sfaturi de wellbeing prin AI** — un asistent disponibil oricând pentru nutriție, ergonomie sau motivație
 
 ---
 
-## Cum te conectezi si testezi aplicatia
+## Funcționalități principale
 
-### Pasul 1 — Deschide aplicatia
+### 🧠 Pauze inteligente
+Aplicația se uită la calendarul tău și detectează când ai prea multe întâlniri la rând fără pauză. Dacă ești blocat în meetings mai mult de 90 de minute, îți sugerează automat o pauză — cu activitate generată de AI în funcție de energia ta din momentul respectiv.
 
-Navigheaza la [http://localhost:5173](http://localhost:5173)
+### 🤝 Matchmaking sportiv
+Vrei să joci padel cu cineva din birou? SyncFit caută colegi cu aceleași sporturi preferate, din același oraș, și generează o prezentare personalizată pentru fiecare potrivire. Rezultatele sunt calculate printr-un algoritm de compatibilitate + AI.
 
-### Pasul 2 — Creaza un cont
+### 💬 Asistent AI integrat
+Un chatbot floating în colțul ecranului, disponibil oricând. Poți să-l întrebi despre stretching, hidratare, echipament sportiv sau ce să mănânci la prânz. Răspunde în stilul pe care tu îl setezi din profil — formal, prietenos, direct sau empatic.
 
-Apasa pe **Sign Up** si completeaza formularul:
-- Nume
-- Email
-- Parola
+### 📊 Tracking zilnic
+Urmărești câte pauze ai luat azi, streak-ul de zile active, puncte EcoPoints câștigate și câte activități sportive ai organizat luna asta.
 
-### Pasul 3 — Logheaza-te
-
-Foloseste credentialele create la pasul anterior.
-
-### Pasul 4 — Exploreaza
-
-Dupa login ai acces la:
-
-| Sectiune | Descriere |
-|----------|-----------|
-| **Dashboard** | Vedere de ansamblu personalizata |
-| **Matchmaking** | Gaseste colegi pentru activitati sportive (ex. Padel) |
-| **Smart Break** | Sugestii AI de pauze bazate pe activitatea ta |
-| **AI Assistant** | Chat cu asistentul AI (buton floating, dreapta-jos) |
+### 😔 Intervenție la stres
+Dacă după o pauză raportezi că te simți mai rău decât înainte, asistentul AI se deschide automat cu un mesaj empatic și propune o activitate care să te ajute.
 
 ---
 
-## Structura proiectului
+## Cum arată aplicația
 
-```
-ING Hackaton/
-├── backend/          # Java Spring Boot API
-│   ├── src/
-│   │   └── main/
-│   │       ├── java/com/ecosync/
-│   │       │   ├── controller/   # REST endpoints
-│   │       │   ├── service/      # Logica de business
-│   │       │   ├── model/        # Entitati si modele
-│   │       │   └── repository/   # Acces baza de date
-│   │       └── resources/
-│   │           └── application.properties
-│   └── pom.xml
-├── frontend/         # React + Vite SPA
-│   ├── src/
-│   │   ├── components/   # Componente UI
-│   │   ├── context/      # AuthContext
-│   │   └── App.jsx
-│   └── package.json
-└── README.md
-```
-
----
-
-## API Endpoints
-
-Base URL: `http://localhost:8080`
-
-### Autentificare
-
-| Metoda | Endpoint | Descriere |
-|--------|----------|-----------|
-| POST | `/api/auth/register` | Inregistrare cont nou |
-| POST | `/api/auth/login` | Login |
-
-**Exemplu register:**
-```bash
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Ion Popescu","email":"ion@test.com","password":"parola123"}'
-```
-
-**Exemplu login:**
-```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"ion@test.com","password":"parola123"}'
-```
-
-### Matchmaking
-
-| Metoda | Endpoint | Descriere |
-|--------|----------|-----------|
-| GET | `/api/matchmaking/{userId}?activity=Padel` | Gaseste colegi pentru o activitate |
-
-### Wellbeing / Pauze
-
-| Metoda | Endpoint | Descriere |
-|--------|----------|-----------|
-| GET | `/api/breaks/{userId}` | Sugestii de pauza pentru utilizator |
-
-### AI Chat
-
-| Metoda | Endpoint | Descriere |
-|--------|----------|-----------|
-| POST | `/api/chat` | Trimite un mesaj catre AI |
-
-**Exemplu chat:**
-```bash
-curl -X POST http://localhost:8080/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"Ce activitati sportive imi recomanzi?"}'
-```
-
----
-
-## Baza de date
-
-Aplicatia foloseste **H2** (baza de date embedded, nu necesita instalare separata).
-
-Datele sunt salvate in `backend/data/ecosync_db.mv.db`.
-
-### Consola H2 (optional, pentru debug)
-
-Cu backend-ul pornit, acceseaza [http://localhost:8080/h2-console](http://localhost:8080/h2-console)
-
-| Camp | Valoare |
-|------|---------|
-| JDBC URL | `jdbc:h2:file:./data/ecosync_db` |
-| Username | `sa` |
-| Password | `password` |
-
----
-
-## Configuratie AI (Gemini)
-
-Aplicatia foloseste **Google Gemini 2.0 Flash**. Cheia API este deja configurata in `backend/src/main/resources/application.properties`.
-
-Daca vrei sa folosesti propria cheie:
-1. Obtine o cheie de la [Google AI Studio](https://aistudio.google.com/)
-2. Editeaza `backend/src/main/resources/application.properties`:
-```properties
-gemini.api.key=CHEIA_TA_AICI
-```
-
----
-
-## Depanare
-
-### Backend nu porneste
-
-```bash
-# Verifica daca portul 8080 e ocupat
-netstat -ano | findstr :8080
-
-# Curata si recompileaza
-cd backend
-mvn clean spring-boot:run
-```
-
-### Frontend nu porneste
-
-```bash
-# Sterge modulele si reinstaleaza
-cd frontend
-rm -rf node_modules
-npm install
-npm run dev
-```
-
-### Eroare CORS
-
-Asigura-te ca backend-ul ruleaza pe portul **8080** si frontend-ul pe **5173**. CORS este configurat pentru aceste porturi.
+| Pagină | Ce face |
+|--------|---------|
+| **Dashboard** | Centrul de comandă — statistici personale, sportul zilei, buton de pauză, stare curentă |
+| **Pauze** | Timeline-ul zilei cu toate pauzele, slider de stare, istoric activitate |
+| **Program** | Calendar cu toate pauzele programate pentru azi |
+| **Matches** | Caută sport, primești lista de colegi potriviți cu mesaj AI personalizat |
+| **Profil** | Configurezi sporturile, locația de muncă, stilul asistentului AI, limitele de sănătate |
 
 ---
 
 ## Tehnologii folosite
 
 **Backend**
-- Java 17
-- Spring Boot 3.2.4
-- Spring Data JPA
-- H2 Database
-- Google Gemini 2.0 Flash API
+- Java 17 + Spring Boot 3 — serverul și toată logica
+- Spring Data JPA — comunicare cu baza de date
+- PostgreSQL pe Supabase — baza de date în cloud
 
 **Frontend**
-- React 18
-- Vite 5
-- Tailwind CSS 3
-- React Router DOM 6
-- Lucide React (icons)
-- Motion (animatii)
+- React 18 + Vite — interfața utilizatorului
+- Tailwind CSS — stilizare
+- React Router — navigare între pagini
+
+**AI**
+- Google Gemini 2.5 Flash — 3 chei separate pentru chat, matchmaking și sugestii de pauze
+
+---
+
+## Pornire locală
+
+### Ce ai nevoie instalat
+- Java 17+
+- Maven 3.8+
+- Node.js 18+
+
+### Pași
+
+```bash
+# 1. Clonează repo-ul
+git clone https://github.com/dragoscocs/HackitAll-RAMsarii.git
+cd HackitAll-RAMsarii
+
+# 2. Pornește backend-ul
+cd backend
+mvn spring-boot:run
+# Rulează pe http://localhost:8080
+
+# 3. Pornește frontend-ul (terminal separat)
+cd frontend
+npm install
+npm run dev
+# Rulează pe http://localhost:5173
+```
+
+Deschide [http://localhost:5173](http://localhost:5173), creează un cont și ești gata.
+
+---
+
+## Conturi demo
+
+Câteva conturi pre-configurate în baza de date cu profiluri complete:
+
+| Email | Parolă | Sporturi |
+|-------|--------|---------|
+| `gigel@ecosync.ro` | `password` | Padel, Tennis |
+| `andrei@ecosync.ro` | `password` | Tennis, Running |
+| `elena@ecosync.ro` | `password` | Padel, Running |
+
+---
+
+## Structura proiectului
+
+```
+├── backend/                  # API Java Spring Boot
+│   └── src/main/java/com/ecosync/
+│       ├── controller/       # Endpoint-uri REST
+│       ├── service/          # Logica de business + integrare AI
+│       ├── model/            # Modele de date
+│       └── repository/       # Interogări bază de date
+│
+├── frontend/                 # Interfața React
+│   └── src/
+│       ├── components/       # Componente UI (Dashboard, Matches, etc.)
+│       ├── pages/            # Paginile aplicației
+│       └── context/          # State management (auth, calendar)
+│
+└── README.md
+```
+
+---
+
+<div align="center">
+
+Construit cu ☕ și prea puțin somn de **Echipa RAMsarii**
+
+*HackItAll April 2026 — București*
+
+</div>
