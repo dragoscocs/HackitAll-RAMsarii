@@ -622,7 +622,7 @@ export default function SportPage() {
     }
   }, [user?.userId, sport])
 
-  useEffect(() => { fetchAI() }, [fetchAI])
+  // Do NOT auto-fetch — user must click "Găsește parteneri" to trigger AI call
 
   /* Use backend if available, else frontend recs */
   const recommendations = (backendMatches.length > 0 && !aiError) ? backendMatches : frontendRecs
