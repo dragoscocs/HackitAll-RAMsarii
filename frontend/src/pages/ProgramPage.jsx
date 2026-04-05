@@ -647,6 +647,7 @@ export default function ProgramPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [weekendAlert, setWeekendAlert] = useState(false)
+  const [m365Alert, setM365Alert] = useState(false)
   const {
     events, connected, connectMicrosoft,
     moodScore, moodFactors, moodLabel, moodReco,
@@ -758,7 +759,10 @@ export default function ProgramPage() {
               </div>
             ) : (
               <button
-                onClick={connectMicrosoft}
+                onClick={() => {
+                  setM365Alert(true)
+                  setTimeout(() => setM365Alert(false), 3500)
+                }}
                 className="flex items-center gap-2 text-xs text-white border border-indigo-500/40 bg-indigo-600/20 hover:bg-indigo-600/40 rounded-xl px-4 py-2 transition-all"
               >
                 <svg className="w-3.5 h-3.5" viewBox="0 0 21 21" fill="none">
@@ -780,6 +784,13 @@ export default function ProgramPage() {
         <div className="bg-emerald-500/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center gap-3 border border-emerald-400/30">
           <span className="text-lg">🌴</span>
           <span className="font-medium text-sm">Este weekend! Relaxează-te și lasă AI-ul să ia o pauză.</span>
+        </div>
+      </div>
+
+      <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${m365Alert ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+        <div className="bg-indigo-500/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl shadow-indigo-500/20 flex items-center gap-3 border border-indigo-400/30">
+          <span className="text-lg flex items-center justify-center pt-0.5"><svg className="w-5 h-5 mx-1" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg></span>
+          <span className="font-medium text-sm">Conectarea cu Microsoft 365 va fi disponibilă în curând!</span>
         </div>
       </div>
 
