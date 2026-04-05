@@ -30,7 +30,9 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       port: 5173,
-      allowedHosts: ['.trycloudflare.com', '.loca.lt', '.serveo.net'],
+      host: true,
+      strictPort: true,
+      allowedHosts: true,
       proxy: {
         '/api': {
           target: env.BACKEND_URL || 'http://localhost:8080',

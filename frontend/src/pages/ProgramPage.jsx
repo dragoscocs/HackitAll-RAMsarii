@@ -63,8 +63,8 @@ function loadColor(totalMin) {
 }
 
 /* ── Teams-style Week Calendar ────────────────────────────────── */
-function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, nextBreakToday }) {
-  const now        = new Date()
+function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, nextBreakToday, nowOverride }) {
+  const now        = nowOverride ?? new Date()
   const gridRef    = useRef(null)
   const currentH   = now.getHours()
   const currentM   = now.getMinutes()
@@ -144,7 +144,8 @@ function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, next
           {/* Day columns */}
           {weekDays.map((day, dayIdx) => {
             const isToday = isSameDay(day, now)
-            const isPastDay = day < new Date(now.setHours(0,0,0,0))
+            const nowMidnight = new Date(now); nowMidnight.setHours(0,0,0,0)
+            const isPastDay = day < nowMidnight
             
             const dayEvents = events
               .filter(ev => isSameDay(new Date(ev.start), day))
@@ -304,8 +305,8 @@ function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, next
 }
 
 /* ── AI Break Schedule Card ───────────────────────────────────── */
-function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule }) {
-  const now            = new Date()
+function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule, nowOverride }) {
+  const now            = nowOverride ?? new Date()
   const currentHDec    = now.getHours() + now.getMinutes() / 60
   const isWeekend      = now.getDay() === 0 || now.getDay() === 6
 
@@ -412,8 +413,8 @@ function AiBreakScheduleCard({ scheduledBreaks, nextBreak, workSchedule }) {
 }
 
 /* ── Break Opportunities Panel ────────────────────────────────── */
-function BreakOpportunitiesPanel({ breakOpportunities }) {
-  const isWeekend = new Date().getDay() === 0 || new Date().getDay() === 6
+function BreakOpportunitiesPanel({ breakOpportunities, nowOverride }) {
+  const isWeekend = (nowOverride ?? new Date()).getDay() === 0 || (nowOverride ?? new Date()).getDay() === 6
   if (isWeekend) return null
 
   return (
@@ -604,8 +605,8 @@ function MoodCard({ moodScore, moodFactors, moodLabel, moodReco }) {
 }
 
 /* ── Meeting Warning Banner ───────────────────────────────────── */
-function MeetingWarningBanner({ todayEvents, breakOpportunities }) {
-  const now = new Date()
+function MeetingWarningBanner({ todayEvents, breakOpportunities, nowOverride }) {
+  const now = nowOverride ?? new Date()
   if (now.getDay() === 0 || now.getDay() === 6) return null
 
   const workStart = new Date(now); workStart.setHours(8, 0, 0, 0)
@@ -649,14 +650,16 @@ export default function ProgramPage() {
   const [m365Alert, setM365Alert] = useState(false)
   const {
     events, connected, connectMicrosoft,
-    moodScore, moodFactors, moodLabel, moodReco,
+    moodScore, moodFactors,
+    effectiveMoodScore, effectiveMoodLabel, effectiveMoodReco,
     selectedWeekOffset, nextWeek, prevWeek,
     weekStart, weekDays,
-    todayEvents, breakOpportunities, smartBreaks
+    todayEvents, breakOpportunities, smartBreaks,
+    demoNow,
   } = useCalendar()
 
-  const today = new Date()
-  
+  const today = demoNow ?? new Date()
+
   // Calculate the "Next Break" for today dynamically
   const nextBreakToday = useMemo(() => {
     const currentHDecimal = today.getHours() + today.getMinutes() / 60;
@@ -807,7 +810,7 @@ export default function ProgramPage() {
       )}
 
       {/* Meeting warning */}
-      <MeetingWarningBanner todayEvents={todayEvents} breakOpportunities={breakOpportunities} />
+      <MeetingWarningBanner todayEvents={todayEvents} breakOpportunities={breakOpportunities} nowOverride={demoNow} />
 
       {/* ── Main grid ── */}
       <main className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-5 gap-5 flex-1 w-full">
@@ -820,6 +823,7 @@ export default function ProgramPage() {
             workSchedule={user?.workSchedule}
             isCurrentWeek={isCurrentWeek}
             nextBreakToday={nextBreakToday}
+            nowOverride={demoNow}
           />
         </div>
 
@@ -828,10 +832,10 @@ export default function ProgramPage() {
 
           {/* Mood */}
           <MoodCard
-            moodScore={moodScore}
+            moodScore={effectiveMoodScore}
             moodFactors={moodFactors}
-            moodLabel={moodLabel}
-            moodReco={moodReco}
+            moodLabel={effectiveMoodLabel}
+            moodReco={effectiveMoodReco}
           />
 
           {/* AI Break schedule */}
@@ -839,10 +843,11 @@ export default function ProgramPage() {
             scheduledBreaks={smartBreaks}
             nextBreak={nextBreakToday}
             workSchedule={user?.workSchedule}
+            nowOverride={demoNow}
           />
 
           {/* Free break windows */}
-          <BreakOpportunitiesPanel breakOpportunities={breakOpportunities} />
+          <BreakOpportunitiesPanel breakOpportunities={breakOpportunities} nowOverride={demoNow} />
 
           {/* 4-week heatmap */}
           <FourWeekHeatmap

@@ -82,10 +82,9 @@ function getMoodRecommendation(score) {
   return 'Zi echilibrată. Ai grijă de pauze regulate și limitează ședințele consecutive.'
 }
 
-function calcBreakOpportunities(todayEvts) {
-  const today = new Date()
-  const DAY_START = new Date(today); DAY_START.setHours(9, 0, 0, 0)
-  const DAY_END = new Date(today); DAY_END.setHours(18, 0, 0, 0)
+function calcBreakOpportunities(todayEvts, dateContext = new Date()) {
+  const DAY_START = new Date(dateContext); DAY_START.setHours(9, 0, 0, 0)
+  const DAY_END = new Date(dateContext); DAY_END.setHours(18, 0, 0, 0)
 
   const sorted = [...todayEvts]
     .map(ev => ({ start: new Date(ev.start), end: new Date(ev.end) }))
@@ -316,6 +315,7 @@ export function CalendarProvider({ children }) {
   const [selectedWeekOffset, setSelectedWeekOffset] = useState(0)
   const [connected, setConnected] = useState(false)
   const [breaksToday, setBreaksToday] = useState(1)
+  const [demoNow, setDemoNow] = useState(null) // Date | null — overrides new Date() for demo/presentation
 
   const nextWeek = () => setSelectedWeekOffset(o => Math.min(3, o + 1))
   const prevWeek = () => setSelectedWeekOffset(o => Math.max(0, o - 1))
@@ -335,19 +335,19 @@ export function CalendarProvider({ children }) {
       return d
     }), [weekStart])
 
-  // todayEvents = events for the actual today (regardless of selected week)
+  // todayEvents = events for the active "today" (uses demoNow when demo mode is on)
   const todayEvents = useMemo(() => {
-    const today = new Date()
+    const today = demoNow ?? new Date()
     return events
       .filter(ev => isSameDay(new Date(ev.start), today))
       .sort((a, b) => new Date(a.start) - new Date(b.start))
-  }, [events])
+  }, [events, demoNow])
 
-  const breakOpportunities = useMemo(() => calcBreakOpportunities(todayEvents), [todayEvents])
+  const breakOpportunities = useMemo(() => calcBreakOpportunities(todayEvents, demoNow ?? new Date()), [todayEvents, demoNow])
   const smartBreaks = useMemo(() => {
     const user = JSON.parse(localStorage.getItem('syncfit_user') || '{}')
-    return calcSmartBreaks(todayEvents, user.workSchedule, new Date())
-  }, [todayEvents])
+    return calcSmartBreaks(todayEvents, user.workSchedule, demoNow ?? new Date())
+  }, [todayEvents, demoNow])
 
   const moodScore = useMemo(() => calcMoodScore(todayEvents, breaksToday), [todayEvents, breaksToday])
   const moodFactors = useMemo(() => getMoodFactors(todayEvents, breaksToday), [todayEvents, breaksToday])
@@ -383,6 +383,11 @@ export function CalendarProvider({ children }) {
     }
   }
 
+  // effectiveMood* — use slider override from PausePage when available (mood sync)
+  const effectiveMoodScore = moodOverride !== null ? moodOverride : moodScore
+  const effectiveMoodLabel = getMoodLabel(effectiveMoodScore)
+  const effectiveMoodReco  = getMoodRecommendation(effectiveMoodScore)
+
   const clearAiIntervention = () => setPendingAiIntervention(null)
 
   const connectMicrosoft = () => setConnected(true)
@@ -392,6 +397,7 @@ export function CalendarProvider({ children }) {
     <CalendarContext.Provider value={{
       events, connected, connectMicrosoft,
       moodScore, moodFactors, moodLabel, moodReco,
+      effectiveMoodScore, effectiveMoodLabel, effectiveMoodReco,
       breaksToday, recordBreak,
       selectedWeekOffset, nextWeek, prevWeek,
       weekStart, weekDays,
@@ -399,6 +405,7 @@ export function CalendarProvider({ children }) {
       moodOverride, setMoodFromSlider,
       morningMood,
       pendingAiIntervention, clearAiIntervention,
+      demoNow, setDemoNow,
     }}>
       {children}
     </CalendarContext.Provider>
