@@ -56,7 +56,7 @@ public class User {
     private boolean criptareConsent = false;
     private boolean anspdcpConsent = false;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String profilePicture;
 
     public User() {}

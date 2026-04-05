@@ -191,7 +191,7 @@ function TeamsWeekCalendar({ weekDays, events, workSchedule, isCurrentWeek, next
                   const type   = MEETING_TYPES_MAP[ev.type] ?? MEETING_TYPES_MAP.team
                   const evDate = new Date(ev.start)
                   const top    = timeToPx(evDate.getHours(), evDate.getMinutes())
-                  const height = durationToPx(ev.duration)
+                  const height = Math.max(20, durationToPx(ev.duration))
 
                   return (
                     <div
