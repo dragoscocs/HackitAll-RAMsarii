@@ -2,6 +2,8 @@ package com.ecosync.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalTime;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,11 +47,8 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String userHealthLimits;
 
-    // Parsed working hours (derived from workSchedule, stored for fast algorithm access)
-    @Column(columnDefinition = "integer default 9")
-    private Integer workStartHour = 9;   // e.g. 9 = 09:00
-    @Column(columnDefinition = "integer default 17")
-    private Integer workEndHour = 17;    // e.g. 17 = 17:00
+    private LocalTime workStartTime = LocalTime.of(9, 0);
+    private LocalTime workEndTime = LocalTime.of(17, 0);
 
     // Legal consents
     private boolean gdprConsent = false;
@@ -117,11 +116,11 @@ public class User {
     public String getUserHealthLimits() { return userHealthLimits; }
     public void setUserHealthLimits(String userHealthLimits) { this.userHealthLimits = userHealthLimits; }
 
-    public int getWorkStartHour() { return workStartHour != null ? workStartHour : 9; }
-    public void setWorkStartHour(int workStartHour) { this.workStartHour = workStartHour; }
+    public LocalTime getWorkStartTime() { return workStartTime != null ? workStartTime : LocalTime.of(9, 0); }
+    public void setWorkStartTime(LocalTime workStartTime) { this.workStartTime = workStartTime; }
 
-    public int getWorkEndHour() { return workEndHour != null ? workEndHour : 17; }
-    public void setWorkEndHour(int workEndHour) { this.workEndHour = workEndHour; }
+    public LocalTime getWorkEndTime() { return workEndTime != null ? workEndTime : LocalTime.of(17, 0); }
+    public void setWorkEndTime(LocalTime workEndTime) { this.workEndTime = workEndTime; }
 
     public boolean isGdprConsent() { return gdprConsent; }
     public void setGdprConsent(boolean gdprConsent) { this.gdprConsent = gdprConsent; }

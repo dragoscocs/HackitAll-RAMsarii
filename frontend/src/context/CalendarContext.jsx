@@ -126,9 +126,19 @@ export function calcSmartBreaks(todayEvts, workSchedule, dateContext = new Date(
   const scheduleStr = workSchedule || '9-17'
   const resultBreaks = []
 
-  const [startH, endH] = scheduleStr.split('-').map(Number)
-  const workStart = new Date(dateContext); workStart.setHours(startH, 0, 0, 0)
-  const workEnd = new Date(dateContext); workEnd.setHours(endH, 0, 0, 0)
+  const parseTime = (t) => {
+    if (t.includes(':')) {
+      const [h, m] = t.split(':').map(Number)
+      return { h, m }
+    }
+    return { h: Number(t), m: 0 }
+  }
+
+  const { h: startH, m: startM } = parseTime(scheduleStr.split('-')[0])
+  const { h: endH, m: endM }      = parseTime(scheduleStr.split('-')[1])
+
+  const workStart = new Date(dateContext); workStart.setHours(startH, startM, 0, 0)
+  const workEnd = new Date(dateContext); workEnd.setHours(endH, endM, 0, 0)
 
   const bufferStart = new Date(workStart.getTime() + 60 * 60 * 1000)
   const bufferEnd = new Date(workEnd.getTime() - 60 * 60 * 1000)

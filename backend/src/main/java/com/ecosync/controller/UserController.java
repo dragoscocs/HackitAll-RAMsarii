@@ -2,6 +2,7 @@ package com.ecosync.controller;
 
 import com.ecosync.model.User;
 import com.ecosync.repository.UserRepository;
+import com.ecosync.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +19,11 @@ import java.util.Map;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final AuthService authService;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, AuthService authService) {
         this.userRepository = userRepository;
+        this.authService = authService;
     }
 
     /** Called after the work-location modal is completed */
@@ -72,7 +75,7 @@ public class UserController {
             if (profileData.getName() != null) user.setName(profileData.getName());
             if (profileData.getCity() != null) user.setCity(profileData.getCity());
             if (profileData.getPreferredSports() != null) user.setPreferredSports(profileData.getPreferredSports());
-            if (profileData.getWorkSchedule() != null) user.setWorkSchedule(profileData.getWorkSchedule());
+            if (profileData.getWorkSchedule() != null) authService.applyWorkSchedule(user, profileData.getWorkSchedule());
             if (profileData.getUserPersonaPrompt() != null) user.setUserPersonaPrompt(profileData.getUserPersonaPrompt());
             if (profileData.getUserHealthLimits() != null) user.setUserHealthLimits(profileData.getUserHealthLimits());
             if (profileData.getProfilePicture() != null) user.setProfilePicture(profileData.getProfilePicture());

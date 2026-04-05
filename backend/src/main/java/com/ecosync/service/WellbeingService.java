@@ -36,16 +36,16 @@ public class WellbeingService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilizator negăsit: " + userId));
 
-        int startHour = user.getWorkStartHour();
-        int endHour   = user.getWorkEndHour();
+        LocalTime startTime = user.getWorkStartTime();
+        LocalTime endTime   = user.getWorkEndTime();
 
         List<MeetingSlot> meetings     = mockDataService.getMeetingSlots();
-        List<SmartBreak>  smartBreaks  = smartBreakService.computeBreaks(startHour, endHour, meetings);
+        List<SmartBreak>  smartBreaks  = smartBreakService.computeBreaks(startTime, endTime, meetings);
         
         LocalTime now = LocalTime.now();
         SmartBreak nextBreak = smartBreakService.findNextBreak(smartBreaks, now);
 
-        return new DailyBreakSchedule(startHour, endHour, smartBreaks, meetings, nextBreak);
+        return new DailyBreakSchedule(startTime, endTime, smartBreaks, meetings, nextBreak);
     }
 
     // ── Single break suggestion (next break + AI text) ────────────────────────
