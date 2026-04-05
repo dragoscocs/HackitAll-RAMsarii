@@ -49,8 +49,27 @@ public class AuthService {
         if (userRepository.findByEmail("andrei@ecosync.ro").isEmpty()) {
             User andrei = new User("Andrei Dumitrescu", "andrei@ecosync.ro", "demo123", "București", List.of("Padel", "Football"));
             applyWorkSchedule(andrei, "8-16");
+            andrei.setAge(28); andrei.setGender("M");
             userRepository.save(andrei);
         }
+
+        // Back-fill age/gender for initial demo users if missing
+        setAgeGender("gigel@ecosync.ro",   32, "M");
+        setAgeGender("ana@ecosync.ro",     27, "F");
+        setAgeGender("radu@ecosync.ro",    30, "M");
+        setAgeGender("maria@ecosync.ro",   25, "F");
+        setAgeGender("bogdan@ecosync.ro",  35, "M");
+        setAgeGender("elena@ecosync.ro",   29, "F");
+    }
+
+    private void setAgeGender(String email, int age, String gender) {
+        userRepository.findByEmail(email).ifPresent(u -> {
+            if (u.getAge() == null) {
+                u.setAge(age);
+                u.setGender(gender);
+                userRepository.save(u);
+            }
+        });
     }
 
     /** Applies workSchedule string and derives workStartTime/workEndTime. */
