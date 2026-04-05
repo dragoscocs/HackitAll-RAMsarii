@@ -357,16 +357,27 @@ export default function MatchesPage() {
   )
 }
 
+const SPORT_ICONS_FULL = {
+  Padel: '🎾', 'Ping Pong': '🏓', Tennis: '🎾', Badminton: '🏸',
+  Football: '⚽', Yoga: '🧘', Cycling: '🚴', Ski: '⛷️', Running: '🏃',
+  Basketball: '🏀', Volleyball: '🏐', Swimming: '🏊', Hiking: '🥾',
+  Squash: '🎾', Gym: '🏋️', CrossFit: '💪',
+}
+
 function MatchCard({ match, rank }) {
   const scorePercent = Math.round(match.matchScore * 100)
   const scoreColor = scorePercent >= 90 ? 'text-emerald-400' : scorePercent >= 75 ? 'text-amber-400' : 'text-slate-400'
   const scoreBg = scorePercent >= 90 ? 'bg-emerald-500' : scorePercent >= 75 ? 'bg-amber-500' : 'bg-slate-500'
   const initials = match.matchedEmployeeName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  // Simplified tags for compact UI
-  const mockTags = ['Ping Pong', 'Badminton', 'Yoga'].slice(0, Math.floor(Math.random() * 2) + 2)
-  const mockJob = rank === 1 ? 'UX Designer' : rank === 2 ? 'Backend Dev' : 'Project Lead'
-  const mockAge = 25 + (rank * 2)
+  const sports = match.sports ?? []
+  const age = match.age ?? null
+  const gender = match.gender === 'F' ? 'F' : match.gender === 'M' ? 'M' : null
+  const metaParts = [
+    age ? `${age} ani` : null,
+    gender,
+    `📍 ${match.city || 'București'}`,
+  ].filter(Boolean)
 
   return (
     <div className="group bg-surface-card/40 border border-surface-border/60 rounded-2xl p-4 hover:border-brand/40 hover:bg-brand/5 transition-all duration-300">
@@ -387,7 +398,7 @@ function MatchCard({ match, rank }) {
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-white truncate group-hover:text-brand-light transition-colors">{match.matchedEmployeeName}</h3>
               <p className="text-[10px] text-slate-500 flex items-center gap-1.5 truncate">
-                {mockJob} · {mockAge} ani · 📍 {match.city || 'București'}
+                {metaParts.join(' · ')}
               </p>
             </div>
             <span className={`text-base font-black tabular-nums tracking-tighter ${scoreColor}`}>{scorePercent}%</span>
@@ -401,14 +412,16 @@ function MatchCard({ match, rank }) {
             />
           </div>
 
-          {/* Tags */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {mockTags.map(tag => (
-              <span key={tag} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-medium text-slate-400 group-hover:border-brand/20 group-hover:text-slate-300 transition-all">
-                {tag}
-              </span>
-            ))}
-          </div>
+          {/* Real sport tags */}
+          {sports.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {sports.slice(0, 3).map(tag => (
+                <span key={tag} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[9px] font-medium text-slate-400 group-hover:border-brand/20 group-hover:text-slate-300 transition-all">
+                  {SPORT_ICONS_FULL[tag] ?? '🏅'} {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 italic mb-4 opacity-80 group-hover:opacity-100 transition-opacity">
             "{match.aiCustomMessage}"

@@ -32,6 +32,9 @@ public class User {
     private int currentStreak = 0;
 
     // Daily tracking fields
+    private Integer age;
+    private String gender;               // "M" | "F"
+
     private String workLocation;          // "HOME" | "OFFICE" | null (not set today)
     @Column(columnDefinition = "integer default 0")
     private Integer breaksTakenToday = 0;
@@ -130,6 +133,12 @@ public class User {
 
     public boolean isAnspdcpConsent() { return anspdcpConsent; }
     public void setAnspdcpConsent(boolean anspdcpConsent) { this.anspdcpConsent = anspdcpConsent; }
+
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 
     public String getProfilePicture() { return profilePicture; }
     public void setProfilePicture(String profilePicture) { this.profilePicture = profilePicture; }
