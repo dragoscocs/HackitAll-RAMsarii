@@ -420,7 +420,7 @@ function RecommendationCard({ profile, score, message, sport, rank, onInvite, on
             onClick={() => onViewProfile(profile)}
             className="flex-1 py-2 rounded-xl text-xs font-semibold border border-white/8 bg-white/5 hover:bg-white/8 text-slate-400 hover:text-white transition-all"
           >
-            Ver profil
+            Vezi Profil
           </button>
           <button
             onClick={() => onInvite(profile)}

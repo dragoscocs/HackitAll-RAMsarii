@@ -417,7 +417,7 @@ function MatchCard({ match, rank }) {
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button className="flex-1 h-8 rounded-lg border border-surface-border bg-surface hover:bg-surface-border text-white text-[10px] font-bold transition-all active:scale-95">
-              Ver profil
+              Vezi Profil
             </button>
             <button className="flex-[1.5] h-8 rounded-lg bg-brand/10 hover:bg-brand/20 border border-brand/20 text-brand-light text-[10px] font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
               <Plus className="w-3 h-3" /> Invită
