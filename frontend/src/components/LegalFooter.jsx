@@ -14,7 +14,7 @@ const COMPLIANCE_BADGES = [
   {
     docId: 'gdpr',
     icon: CheckCircle2,
-    label: 'GDPR Compliant',
+    label: 'GDPR',
     sub: 'Regulamentul UE 2016/679',
     iconColor: 'text-emerald-400',
     ringColor: 'ring-emerald-500/20',

@@ -74,6 +74,11 @@ public class AiService {
             return "Te ajut doar cu wellbeing și sport.";
         }
 
+        if (geminiApiKeyChat == null || geminiApiKeyChat.isBlank()) {
+            System.err.println("[ChatError] gemini.api.key.chat is not configured — restart the backend after setting it in application.properties");
+            return "Configurare lipsă. Restartează backend-ul.";
+        }
+
         if (imageBase64 != null && !imageBase64.isBlank()) {
             String textPrompt = buildConversationContext(history != null ? history : List.of(), user);
             try {

@@ -247,7 +247,7 @@ function SmartBreakBanner() {
         <div className="flex gap-2 shrink-0">
           <button onClick={goBreak}
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all hover:scale-105 shadow-lg">
-            🌿 Ia o acum
+            🌿 Am nevoie de o pauză
           </button>
           <button onClick={() => navigate('/program')}
             className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 text-xs font-medium transition-all">
