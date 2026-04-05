@@ -16,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 public class ChatController {
 
     public record ChatMessage(String role, String content) {}
-    public record ChatRequest(List<ChatMessage> history, String imageBase64) {}
+    public record ChatRequest(List<ChatMessage> history, String imageBase64, Long userId) {}
 
     private final AiService aiService;
     private final UserRepository userRepository;
@@ -28,7 +28,10 @@ public class ChatController {
 
     @PostMapping("/api/chat")
     public String chat(@RequestBody ChatRequest request) {
-        return aiService.getChatReply(request);
+        User user = (request.userId() != null)
+                ? userRepository.findById(request.userId()).orElse(null)
+                : null;
+        return aiService.getChatReply(request, user);
     }
 
     @PostMapping("/api/ai/smart-break/{userId}")

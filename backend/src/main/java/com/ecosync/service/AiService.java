@@ -46,18 +46,27 @@ public class AiService {
         boolean isExpired() { return System.currentTimeMillis() - timestamp > BREAK_CACHE_TTL_MS; }
     }
 
-    private static final String SYSTEM_PROMPT = "SYSTEM: Ești SyncFit, asistent AI corporate. " +
-            "REGULI: " +
+    private static final String BASE_RULES =
+            " REGULI: " +
             "1. Răspunde în MAXIM 40 de cuvinte. " +
             "2. Analizează imaginile încărcate SAU răspunde doar despre sport, nutriție, ergonomie. " +
             "3. Refuză politicos orice alt subiect. " +
             "CONTEXT CONVERSAȚIE:";
 
+    private String buildSystemPrompt(User user) {
+        String persona = (user != null
+                && user.getUserPersonaPrompt() != null
+                && !user.getUserPersonaPrompt().isBlank())
+                ? user.getUserPersonaPrompt()
+                : "Ești SyncFit, asistent AI corporate prietenos.";
+        return "SYSTEM: " + persona + BASE_RULES;
+    }
+
     public AiService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
 
-    public String getChatReply(ChatRequest request) {
+    public String getChatReply(ChatRequest request, User user) {
         List<ChatMessage> history = request.history();
         String imageBase64 = request.imageBase64();
 
@@ -66,7 +75,7 @@ public class AiService {
         }
 
         if (imageBase64 != null && !imageBase64.isBlank()) {
-            String textPrompt = buildConversationContext(history != null ? history : List.of());
+            String textPrompt = buildConversationContext(history != null ? history : List.of(), user);
             try {
                 return extractAndCleanJson(callGeminiMultimodal(textPrompt, imageBase64, geminiApiKeyChat));
             } catch (Exception e) {
@@ -81,14 +90,15 @@ public class AiService {
                 .map(ChatMessage::content)
                 .orElse("");
 
-        String cacheKey = lastUserMessage.toLowerCase().trim();
+        // Cache key includes userId so persona changes take effect immediately
+        String cacheKey = (user != null ? user.getId() + ":" : "") + lastUserMessage.toLowerCase().trim();
 
         if (responseCache.containsKey(cacheKey)) {
             return responseCache.get(cacheKey);
         }
 
         try {
-            String rawResponse = callGeminiApi(buildConversationContext(history), null, geminiApiKeyChat);
+            String rawResponse = callGeminiApi(buildConversationContext(history, user), null, geminiApiKeyChat);
             String reply = extractAndCleanJson(rawResponse);
             responseCache.put(cacheKey, reply);
             return reply;
@@ -98,8 +108,8 @@ public class AiService {
         }
     }
 
-    private String buildConversationContext(List<ChatMessage> history) {
-        StringBuilder context = new StringBuilder(SYSTEM_PROMPT).append("\n");
+    private String buildConversationContext(List<ChatMessage> history, User user) {
+        StringBuilder context = new StringBuilder(buildSystemPrompt(user)).append("\n");
         for (ChatMessage msg : history) {
             context.append(msg.role().toUpperCase()).append(": ").append(msg.content()).append("\n");
         }

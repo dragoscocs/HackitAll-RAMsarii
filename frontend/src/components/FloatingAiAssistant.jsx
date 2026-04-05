@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Loader2, Send, Paperclip } from 'lucide-react';
 import { useCalendar } from '../context/CalendarContext';
+import { useAuth } from '../context/AuthContext';
 
 const FloatingAiAssistant = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -15,6 +16,8 @@ const FloatingAiAssistant = () => {
   const interventionHandledRef = useRef(false);
 
   const { pendingAiIntervention, clearAiIntervention } = useCalendar();
+  const { user } = useAuth();
+  const userId = user?.userId ?? user?.id ?? null;
 
   // ── Auto-open + AI message when low mood is detected ────────────────────
   useEffect(() => {
@@ -33,7 +36,7 @@ const FloatingAiAssistant = () => {
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ history: [{ role: 'user', content: prompt }], imageBase64: null }),
+      body: JSON.stringify({ history: [{ role: 'user', content: prompt }], imageBase64: null, userId }),
     })
       .then(r => r.ok ? r.text() : Promise.reject('err'))
       .then(aiMsg => {
@@ -86,7 +89,7 @@ const FloatingAiAssistant = () => {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history: contextToSend, imageBase64: imageToSend }),
+        body: JSON.stringify({ history: contextToSend, imageBase64: imageToSend, userId }),
       });
 
       if (!response.ok) throw new Error('Network error');
