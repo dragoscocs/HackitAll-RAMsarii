@@ -409,65 +409,107 @@ function CityDropdown({ currentCity, onSelect }) {
   )
 }
 
+const SPORT_GROUPS = [
+  { key: 'racket',   label: 'Rachetă',  icon: '🎾', accent: '#6366f1' },
+  { key: 'team',     label: 'Echipă',   icon: '⚽', accent: '#10b981' },
+  { key: 'outdoor',  label: 'Outdoor',  icon: '🏃', accent: '#f59e0b' },
+  { key: 'wellness', label: 'Wellness', icon: '🧘', accent: '#ec4899' },
+]
+
 /* ── Sport grid section ───────────────────────────────────────────── */
 function SportGridSection({ userSports, userCity }) {
   const navigate = useNavigate()
-  const sorted   = sortedSports(userSports)
   const { updateUser } = useAuth()
+  const prefSet = new Set(userSports)
+
+  const preferred = ALL_SPORTS_META.filter(s => prefSet.has(s.name))
+  const byGroup   = (key) => ALL_SPORTS_META.filter(s => s.group === key && !prefSet.has(s.name))
 
   return (
-    <section className="space-y-5 animate-fade-in">
-      <div className="flex items-start justify-between gap-4">
+    <section className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-white">🤝 Sport cu colegii</h2>
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            🤝 Sport cu colegii
+            <span className="text-[10px] font-normal text-slate-500 bg-white/5 border border-white/8 px-2 py-0.5 rounded-full">
+              ✦ AI-powered pairing
+            </span>
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {userCity
-              ? <>Lobby-uri și parteneri din <strong className="text-slate-400">{userCity}</strong></>
+              ? <>Lobby-uri și parteneri din <strong className="text-slate-400">{userCity}</strong> · recomandat de AI</>
               : 'Alege sportul și găsește parteneri sau creează un lobby'}
           </p>
         </div>
-        
-        {/* Modern City Selector */}
-        <CityDropdown
-          currentCity={userCity}
-          onSelect={(city) => updateUser({ city })}
-        />
+        <CityDropdown currentCity={userCity} onSelect={(city) => updateUser({ city })} />
       </div>
 
-      {/* Sport grid */}
-      <div className="flex flex-wrap gap-2">
-        {sorted.map(sport => {
-          const meta    = SPORT_META[sport.name] ?? { color: '#6366f1' }
-          const opacity = sportGlowOpacity(sport, userSports)
-          const isTop   = userSports.includes(sport.name)
-
-          return (
-            <GlowingButton
-              key={sport.name}
-              glowColor={meta.color}
-              onClick={() => navigate(`/sport/${encodeURIComponent(sport.name)}`)}
-              className={`transition-all duration-200 ${isTop ? 'ring-1' : ''}`}
-              style={{
-                opacity: 0.3 + opacity * 0.7,
-                ringColor: isTop ? `${meta.color}40` : 'transparent',
-              }}
-            >
-              <span style={{ fontSize: '1rem', lineHeight: 1 }}>{sport.icon}</span>
-              <span className="font-semibold">{sport.name}</span>
-              {isTop && (
-                <span
-                  className="ml-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                  style={{ background: `${meta.color}25`, color: meta.color }}
+      {/* Favourite sports — prominent row */}
+      {preferred.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">⭐ Sporturile tale</p>
+          <div className="flex flex-wrap gap-2.5">
+            {preferred.map(sport => {
+              const meta = SPORT_META[sport.name] ?? { color: '#6366f1' }
+              return (
+                <button
+                  key={sport.name}
+                  onClick={() => navigate(`/sport/${encodeURIComponent(sport.name)}`)}
+                  className="relative flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.04] active:scale-[0.97]"
+                  style={{
+                    background: `linear-gradient(135deg, ${meta.color}22, ${meta.color}10)`,
+                    border: `1.5px solid ${meta.color}55`,
+                    boxShadow: `0 4px 20px ${meta.color}20`,
+                  }}
                 >
-                  ★
-                </span>
-              )}
-            </GlowingButton>
+                  <span className="text-base leading-none">{sport.icon}</span>
+                  <span>{sport.name}</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md ml-0.5"
+                    style={{ background: `${meta.color}30`, color: meta.color }}>★</span>
+                  {/* Glow bar */}
+                  <div className="absolute inset-x-0 bottom-0 h-[1px] rounded-full"
+                    style={{ background: `linear-gradient(to right, transparent, ${meta.color}80, transparent)` }} />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Grouped rows */}
+      <div className="space-y-4">
+        {SPORT_GROUPS.map(group => {
+          const sports = byGroup(group.key)
+          if (sports.length === 0) return null
+          return (
+            <div key={group.key} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{group.icon}</span>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{group.label}</p>
+                <div className="flex-1 h-px" style={{ background: `linear-gradient(to right, ${group.accent}30, transparent)` }} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {sports.map(sport => {
+                  const meta = SPORT_META[sport.name] ?? { color: group.accent }
+                  return (
+                    <GlowingButton
+                      key={sport.name}
+                      glowColor={meta.color}
+                      onClick={() => navigate(`/sport/${encodeURIComponent(sport.name)}`)}
+                      className="transition-all duration-200"
+                    >
+                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{sport.icon}</span>
+                      <span className="font-semibold">{sport.name}</span>
+                    </GlowingButton>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </div>
 
-      {/* Hint */}
       <p className="text-[11px] text-slate-600 flex items-center gap-1.5">
         <span>💡</span>
         Sporturile tale preferate sunt cele mai luminate. Apasă pe orice sport pentru a vedea lobby-uri active și recomandări AI.

@@ -383,20 +383,39 @@ export function CalendarProvider({ children }) {
     return calcSmartBreaks(todayEvents, user.workSchedule, demoNow ?? new Date())
   }, [todayEvents, demoNow])
 
-  // Adjusted breaks: marks taken ones, pushes future ones if taken too recently
+  // Adjusted breaks: marks taken ones, pushes future ones if taken too recently, adds AI recovery break if mood is low
   const adjustedSmartBreaks = useMemo(() => {
     const base = smartBreaks.map(b => ({ ...b, taken: false, adjusted: false }))
-    if (takenBreaks.length === 0) return base
-    const lastTaken = takenBreaks[takenBreaks.length - 1]
-    const minNext = new Date(lastTaken.getTime() + 45 * 60000)
     const effectNow = demoNow ?? new Date()
-    return base.map(b => {
-      const isTaken = takenBreaks.some(t => Math.abs(t.getTime() - b.time.getTime()) <= 30 * 60000)
-      if (isTaken) return { ...b, taken: true }
-      if (b.time > effectNow && b.time < minNext) return { ...b, time: new Date(minNext), adjusted: true }
-      return b
-    }).sort((a, b) => a.time - b.time)
-  }, [smartBreaks, takenBreaks, demoNow])
+
+    let result = takenBreaks.length === 0 ? base : (() => {
+      const lastTaken = takenBreaks[takenBreaks.length - 1]
+      const minNext = new Date(lastTaken.getTime() + 45 * 60000)
+      return base.map(b => {
+        const isTaken = takenBreaks.some(t => Math.abs(t.getTime() - b.time.getTime()) <= 30 * 60000)
+        if (isTaken) return { ...b, taken: true }
+        if (b.time > effectNow && b.time < minNext) return { ...b, time: new Date(minNext), adjusted: true }
+        return b
+      })
+    })()
+
+    // Inject AI recovery break when mood is low (avoids duplicates within 15 min)
+    if (recoveryBreakTime && recoveryBreakTime > effectNow) {
+      const hasSimilar = result.some(b => !b.taken && Math.abs(b.time - recoveryBreakTime) < 15 * 60000)
+      if (!hasSimilar) {
+        result = [...result, {
+          type: 'RECOVERY',
+          time: recoveryBreakTime,
+          durationMinutes: 3,
+          reason: 'Pauză de recuperare · recomandat de AI',
+          taken: false,
+          adjusted: true,
+        }]
+      }
+    }
+
+    return result.sort((a, b) => a.time - b.time)
+  }, [smartBreaks, takenBreaks, demoNow, recoveryBreakTime])
 
   // nextBreak — first upcoming non-taken break
   const nextBreak = useMemo(() => {
@@ -423,6 +442,7 @@ export function CalendarProvider({ children }) {
   // ── Mood override (set after break slider) ──────────────────────────────
   const [moodOverride, setMoodOverride] = useState(null) // 0-100 | null
   const [pendingAiIntervention, setPendingAiIntervention] = useState(null) // { score, userName, sliderValue } | null
+  const [recoveryBreakTime, setRecoveryBreakTime] = useState(null) // Date | null — extra break added when mood is low
 
   // ── Morning mood (persisted per day via localStorage + custom event) ────
   const [morningMood, setMorningMoodState] = useState(() => {
@@ -446,6 +466,11 @@ export function CalendarProvider({ children }) {
     setMoodOverride(score)
     if (sliderValue <= -2) {
       setPendingAiIntervention({ score, userName: userName ?? 'Coleg', sliderValue })
+      // AI reconfiguration: schedule a recovery break 20 min after now
+      const base = demoNow ?? new Date()
+      setRecoveryBreakTime(new Date(base.getTime() + 20 * 60000))
+    } else {
+      setRecoveryBreakTime(null)
     }
   }
 
@@ -473,6 +498,7 @@ export function CalendarProvider({ children }) {
       moodOverride, setMoodFromSlider,
       morningMood,
       pendingAiIntervention, clearAiIntervention,
+      recoveryBreakTime,
       demoNow, setDemoNow,
     }}>
       {children}

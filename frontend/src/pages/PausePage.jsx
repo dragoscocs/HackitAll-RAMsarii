@@ -16,9 +16,11 @@ function MoodSlider({ onSubmit }) {
   const getEmoji = () => {
     if (value <= -4) return '😩'
     if (value <= -2) return '😕'
+    if (value === -1) return '😐'
     if (value === 0) return '😐'
     if (value >= 4)  return '😄'
-    return '🙂'
+    if (value >= 2)  return '🙂'
+    return '😌'
   }
   const getColor = () => {
     if (value <= -3) return '#ef4444'
@@ -110,6 +112,46 @@ function MoodSlider({ onSubmit }) {
   )
 }
 
+/* ── Meteor CSS animation ─────────────────────────────────────────── */
+function MeteorCanvas() {
+  return (
+    <>
+      <style>{`
+        @keyframes meteor {
+          0%   { transform: translateX(0) translateY(0) rotate(215deg); opacity: 1; }
+          70%  { opacity: 1; }
+          100% { transform: translateX(-500px) translateY(300px) rotate(215deg); opacity: 0; }
+        }
+        .meteor-particle {
+          position: absolute;
+          width: 2px;
+          height: 80px;
+          background: linear-gradient(to bottom, rgba(255,255,255,0.8), transparent);
+          border-radius: 999px;
+          animation: meteor linear infinite;
+          pointer-events: none;
+        }
+      `}</style>
+      {[
+        { top: '15%', left: '80%', delay: '0s',   duration: '4s'  },
+        { top: '25%', left: '60%', delay: '1.5s', duration: '5s'  },
+        { top: '10%', left: '40%', delay: '3s',   duration: '3.5s'},
+        { top: '35%', left: '90%', delay: '0.8s', duration: '6s'  },
+        { top: '5%',  left: '70%', delay: '2.2s', duration: '4.5s'},
+        { top: '45%', left: '50%', delay: '4s',   duration: '5.5s'},
+        { top: '20%', left: '95%', delay: '1s',   duration: '3.8s'},
+      ].map((m, i) => (
+        <div key={i} className="meteor-particle" style={{
+          top: m.top, left: m.left,
+          animationDelay: m.delay,
+          animationDuration: m.duration,
+          opacity: 0,
+        }} />
+      ))}
+    </>
+  )
+}
+
 /* ── Main Page ────────────────────────────────────────────────────── */
 export default function PausePage() {
   const navigate   = useNavigate()
@@ -120,7 +162,27 @@ export default function PausePage() {
   const timerRef   = useRef(null)
   const recordedRef = useRef(false)
 
-  const suggestionText = location.state?.suggestionText ?? 'Depărtează-te de ecran. Respiră adânc și relaxează-te.'
+  const [aiSuggestion, setAiSuggestion] = useState(
+    location.state?.suggestionText ?? null
+  )
+
+  // Fetch AI-personalized break suggestion on mount
+  useEffect(() => {
+    const userId = user?.userId
+    if (!userId) return
+    const hour = new Date().getHours()
+    const timeOfDay = hour < 12 ? 'dimineata' : hour < 17 ? 'dupa-amiaza' : 'seara'
+    fetch(`/api/ai/smart-break/${userId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentMood: 3, scheduleContext: 'Pauza inteligenta planificata', timeOfDay }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.description_ro) setAiSuggestion(data.description_ro) })
+      .catch(() => {})
+  }, []) // eslint-disable-line
+
+  const suggestionText = aiSuggestion ?? 'Depărtează-te de ecran. Respiră adânc și relaxează-te.'
 
   const [secondsLeft, setSecondsLeft] = useState(BREAK_DURATION)
   const [phase, setPhase]             = useState('countdown')
@@ -158,6 +220,7 @@ export default function PausePage() {
   return (
     <div className="fixed inset-0 z-[300] overflow-hidden bg-black">
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover touch-none" />
+      <MeteorCanvas />
       <div className="absolute inset-0 bg-black/50" />
 
       <div className="relative z-10 flex flex-col items-center justify-center h-full gap-8 px-8">

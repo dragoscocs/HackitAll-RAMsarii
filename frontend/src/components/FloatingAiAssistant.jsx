@@ -28,6 +28,8 @@ const FloatingAiAssistant = () => {
 
     const prompt = `Ești asistentul de wellbeing SyncFit. Utilizatorul ${userName} tocmai a raportat că s-a simțit ${Math.abs(sliderValue)} puncte mai rău după pauza de azi (scor wellness actual: ${score}/100). Trimite-i un mesaj empatic, cald și autentic în română. Recunoaște că nu se simte bine, oferă puțin sprijin emoțional, și propune concret să planificați împreună o activitate fizică sau socială scurtă după program care să-l/o ajute să se simtă mai bine. Fii concis — maximum 3 propoziții scurte. Tonul trebuie să fie ca al unui prieten grijuliu, nu al unui robot. Nu folosi liste sau titluri.`;
 
+    const fallbackMsg = `Hei, ${userName}! Văd că azi nu-i ușor. 💙 Nu te îngrijora — toată lumea are zile mai grele. Hai să programăm ceva relaxant după muncă, poate o plimbare sau un joc de padel cu colegii? Vorbim!`
+
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -35,13 +37,12 @@ const FloatingAiAssistant = () => {
     })
       .then(r => r.ok ? r.text() : Promise.reject('err'))
       .then(aiMsg => {
-        setChatHistory(prev => [...prev, { role: 'ai', content: aiMsg }]);
+        // Detect backend error strings and replace with empathic fallback
+        const isError = aiMsg.startsWith('Ne pare rău') || aiMsg.startsWith('Oops') || aiMsg.length < 5
+        setChatHistory(prev => [...prev, { role: 'ai', content: isError ? fallbackMsg : aiMsg }]);
       })
       .catch(() => {
-        setChatHistory(prev => [...prev, {
-          role: 'ai',
-          content: `Hei, ${userName}! Văd că azi nu-i ușor. 💙 Nu te îngrijora — toată lumea are zile mai grele. Hai să programăm ceva relaxant după muncă, poate o plimbare sau un joc de padel cu colegii? Vorbim!`,
-        }]);
+        setChatHistory(prev => [...prev, { role: 'ai', content: fallbackMsg }]);
       })
       .finally(() => {
         setIsTyping(false);
@@ -90,7 +91,8 @@ const FloatingAiAssistant = () => {
 
       if (!response.ok) throw new Error('Network error');
       const data = await response.text();
-      setChatHistory(prev => [...prev, { role: 'ai', content: data }]);
+      const isError = data.startsWith('Ne pare rău') || data.startsWith('Oops') || data.length < 5
+      setChatHistory(prev => [...prev, { role: 'ai', content: isError ? 'Momentan nu pot răspunde. Încearcă din nou în câteva secunde! 🤖' : data }]);
     } catch (error) {
       console.error('Chat error:', error);
       setChatHistory(prev => [...prev, { role: 'ai', content: 'Oops! Eroare de conexiune. Mai încearcă.' }]);
