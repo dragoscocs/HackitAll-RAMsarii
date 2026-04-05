@@ -8,6 +8,10 @@ public class Employee {
     private String name;
     private String city;
     private List<String> preferredSports;
+    private int age;
+    private String gender;
+    private String role;
+    private String bio;
 
     public Employee() {}
 
@@ -15,6 +19,18 @@ public class Employee {
         this.id = id;
         this.name = name;
         this.city = city;
+        this.preferredSports = preferredSports;
+    }
+
+    public Employee(Long id, String name, int age, String gender, String city,
+                    String role, String bio, List<String> preferredSports) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.gender = gender;
+        this.city = city;
+        this.role = role;
+        this.bio = bio;
         this.preferredSports = preferredSports;
     }
 
@@ -28,5 +44,17 @@ public class Employee {
     public void setCity(String city) { this.city = city; }
 
     public List<String> getPreferredSports() { return preferredSports; }
-    public void setPreferredSports(List<String> preferredSports) { this.preferredSports = preferredSports; }
+    public void setPreferredSports(List<String> s) { this.preferredSports = s; }
+
+    public int getAge() { return age; }
+    public void setAge(int age) { this.age = age; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
 }

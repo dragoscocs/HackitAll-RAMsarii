@@ -48,8 +48,10 @@ class WebGLRenderer {
     this.pointerCoords = [0, 0]
     this.nbrOfPointers = 0
     this.vertices = [-1, 1, -1, -1, 1, 1, 1, -1]
-    this.gl.viewport(0, 0, canvas.width * scale, canvas.height * scale)
+    if (this.gl) this.gl.viewport(0, 0, canvas.width * scale, canvas.height * scale)
   }
+
+  get isSupported() { return !!this.gl }
 
   compile(shader, source) {
     const { gl } = this
@@ -61,6 +63,7 @@ class WebGLRenderer {
   }
 
   setup() {
+    if (!this.gl) return
     const { gl } = this
     this.vs = gl.createShader(gl.VERTEX_SHADER)
     this.fs = gl.createShader(gl.FRAGMENT_SHADER)
@@ -73,6 +76,7 @@ class WebGLRenderer {
   }
 
   init() {
+    if (!this.gl) return
     const { gl, program } = this
     this.buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer)
@@ -89,6 +93,7 @@ class WebGLRenderer {
   }
 
   reset() {
+    if (!this.gl) return
     const { gl, program } = this
     if (program && !gl.getProgramParameter(program, gl.DELETE_STATUS)) {
       if (this.vs) { gl.detachShader(program, this.vs); gl.deleteShader(this.vs) }
@@ -99,7 +104,7 @@ class WebGLRenderer {
 
   updateScale(scale) {
     this.scale = scale
-    this.gl.viewport(0, 0, this.canvas.width * scale, this.canvas.height * scale)
+    if (this.gl) this.gl.viewport(0, 0, this.canvas.width * scale, this.canvas.height * scale)
   }
 
   updateMove(d)  { this.mouseMove     = d }
@@ -108,6 +113,7 @@ class WebGLRenderer {
   updatePointerCount(n)  { this.nbrOfPointers = n }
 
   render(now = 0) {
+    if (!this.gl) return
     const { gl, program } = this
     if (!program || gl.getProgramParameter(program, gl.DELETE_STATUS)) return
     gl.clearColor(0, 0, 0, 1)
@@ -177,6 +183,8 @@ export function useShaderBackground() {
     canvas.height = window.innerHeight * dpr
 
     const renderer = new WebGLRenderer(canvas, dpr)
+    if (!renderer.isSupported) return
+
     const pointers = new PointerHandler(canvas, dpr)
     rendererRef.current = renderer
     pointersRef.current = pointers

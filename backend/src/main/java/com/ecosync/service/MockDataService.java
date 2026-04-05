@@ -12,107 +12,127 @@ import java.util.Optional;
 @Service
 public class MockDataService {
 
-    private final List<Employee>    employees      = new ArrayList<>();
-    private final List<MeetingSlot> meetingSlots   = new ArrayList<>();
+    private final List<Employee>    employees    = new ArrayList<>();
+    private final List<MeetingSlot> meetingSlots = new ArrayList<>();
 
     public MockDataService() {
 
-        // ── Meeting calendar ─────────────────────────────────────────────────────
-        // Three meetings spread through the day → algorithm produces breaks at 11:00 and 14:00
-        meetingSlots.add(new MeetingSlot(9, 0, 10, 0, "Sprint Planning"));
+        // ── Meeting calendar ────────────────────────────────────────────────────
+        meetingSlots.add(new MeetingSlot(9,  0, 10, 0, "Sprint Planning"));
         meetingSlots.add(new MeetingSlot(12, 0, 13, 0, "Team Sync"));
         meetingSlots.add(new MeetingSlot(15, 0, 16, 0, "Code Review"));
 
-        // ── Employees ─────────────────────────────────────────────────────────────
-        // București
-        employees.add(new Employee(1L,  "Andrei Popescu",    "București",             List.of("Padel", "Tennis")));
-        employees.add(new Employee(2L,  "Ioana Ionescu",     "București",             List.of("Ping Pong", "Badminton")));
-        employees.add(new Employee(3L,  "Sofia Constantin",  "București",             List.of("Yoga", "Running")));
-        employees.add(new Employee(4L,  "Elena Stancu",      "București",             List.of("Badminton", "Padel")));
-        employees.add(new Employee(5L,  "Mihai Radu",        "București",             List.of("Football", "Cycling")));
+        // ── 15 rich demo profiles ───────────────────────────────────────────────
+        employees.add(new Employee(101L, "Andrei Popescu",  28, "M", "București",
+            "Software Engineer",
+            "Joc tenis de 5 ani și am descoperit padelul recent. Prefer meciuri competitive dar prietenești.",
+            List.of("Padel", "Tennis", "Squash")));
 
-        // Cluj
-        employees.add(new Employee(6L,  "Alex Mihalcea",     "Cluj",                  List.of("Padel", "Football")));
-        employees.add(new Employee(7L,  "Diana Pop",         "Cluj",                  List.of("Yoga", "Running")));
-        employees.add(new Employee(8L,  "Mihai Mureșan",     "Cluj",                  List.of("Tennis", "Cycling")));
-        employees.add(new Employee(9L,  "Raluca Bota",       "Cluj",                  List.of("Badminton", "Ping Pong")));
+        employees.add(new Employee(102L, "Maria Ionescu",   32, "F", "București",
+            "Product Manager",
+            "Alerg semimaratoane și fac yoga zilnic. Caut colegi pentru antrenamente de dimineață.",
+            List.of("Yoga", "Running", "Cycling")));
 
-        // Iași
-        employees.add(new Employee(10L, "Vlad Dumitrescu",   "Iași",                  List.of("Tennis", "Cycling")));
-        employees.add(new Employee(11L, "Andreea Chirica",   "Iași",                  List.of("Yoga", "Badminton")));
-        employees.add(new Employee(12L, "Cosmin Holban",     "Iași",                  List.of("Football", "Running")));
+        employees.add(new Employee(103L, "Bogdan Dumitrescu", 25, "M", "București",
+            "Data Analyst",
+            "Pasionat de fotbal. Organizez meciuri 5vs5 în fiecare vineri seara.",
+            List.of("Football", "Basketball", "Running")));
 
-        // Timișoara
-        employees.add(new Employee(13L, "Lucian Popa",       "Timișoara",             List.of("Football", "Running")));
-        employees.add(new Employee(14L, "Alina Bălan",       "Timișoara",             List.of("Padel", "Yoga")));
-        employees.add(new Employee(15L, "Cristian Negru",    "Timișoara",             List.of("Tennis", "Cycling")));
+        employees.add(new Employee(104L, "Elena Stancu",    29, "F", "București",
+            "UX Designer",
+            "Campioană la ping pong pe departament 3 ani la rând. Provocarea e binevenită.",
+            List.of("Ping Pong", "Badminton", "Yoga")));
 
-        // Brașov
-        employees.add(new Employee(16L, "Radu Moldovan",     "Brașov",                List.of("Ski", "Running")));
-        employees.add(new Employee(17L, "Cristina Lungu",    "Brașov",                List.of("Yoga", "Cycling")));
-        employees.add(new Employee(18L, "Florin Gherman",    "Brașov",                List.of("Ski", "Football")));
+        employees.add(new Employee(105L, "Radu Mihalcea",   35, "M", "București",
+            "Engineering Lead",
+            "Squash în fiecare dimineață. Nu există zi proastă după 45 de minute pe teren.",
+            List.of("Squash", "Padel", "Swimming")));
 
-        // Constanța
-        employees.add(new Employee(19L, "Florin Marin",      "Constanța",             List.of("Padel", "Football")));
-        employees.add(new Employee(20L, "Simona Nedelcu",    "Constanța",             List.of("Running", "Tennis")));
-        employees.add(new Employee(21L, "Adrian Cojocaru",   "Constanța",             List.of("Badminton", "Ping Pong")));
+        employees.add(new Employee(106L, "Cristina Popa",   27, "F", "București",
+            "Marketing Specialist",
+            "Îmi place să explorez trasee noi. Luna trecută am terminat maratonul din Sibiu — 3h 47min.",
+            List.of("Running", "Hiking", "Cycling")));
 
-        // Oradea
-        employees.add(new Employee(22L, "Gabriel Bota",      "Oradea",                List.of("Football", "Padel")));
-        employees.add(new Employee(23L, "Laura Crișan",      "Oradea",                List.of("Ping Pong", "Yoga")));
-        employees.add(new Employee(24L, "Tiberiu Sas",       "Oradea",                List.of("Tennis", "Running")));
+        employees.add(new Employee(107L, "Victor Nica",     31, "M", "București",
+            "Backend Developer",
+            "Intermediar la tenis, avansat la squash. Meciuri scurte și intense în pauza de prânz.",
+            List.of("Tennis", "Squash", "Badminton")));
 
-        // Sibiu
-        employees.add(new Employee(25L, "Dănuț Bratu",       "Sibiu",                 List.of("Ski", "Football")));
-        employees.add(new Employee(26L, "Monica Cârstea",    "Sibiu",                 List.of("Yoga", "Tennis")));
-        employees.add(new Employee(27L, "Ionel Draghici",    "Sibiu",                 List.of("Running", "Cycling")));
+        employees.add(new Employee(108L, "Ana Constantin",  24, "F", "București",
+            "HR Specialist",
+            "Am jucat volei în liceu și vreau să revin la formă. Multă energie și bună dispoziție!",
+            List.of("Volleyball", "Badminton", "Running")));
 
-        // Arad
-        employees.add(new Employee(28L, "Petru Varga",       "Arad",                  List.of("Football", "Tennis")));
-        employees.add(new Employee(29L, "Ana Suciu",         "Arad",                  List.of("Badminton", "Running")));
-        employees.add(new Employee(30L, "Cornel Toth",       "Arad",                  List.of("Padel", "Cycling")));
+        employees.add(new Employee(109L, "Sorin Munteanu",  38, "M", "București",
+            "Senior Architect",
+            "Triatlet amator. 50km pe bicicletă în fiecare weekend. Caut colegi pentru group rides.",
+            List.of("Cycling", "Running", "Swimming")));
 
-        // Pitești
-        employees.add(new Employee(31L, "Ionuț Dinu",        "Pitești",               List.of("Padel", "Football")));
-        employees.add(new Employee(32L, "Camelia Preda",     "Pitești",               List.of("Yoga", "Cycling")));
-        employees.add(new Employee(33L, "Dan Gheorghe",      "Pitești",               List.of("Tennis", "Running")));
+        employees.add(new Employee(110L, "Diana Pop",       26, "F", "București",
+            "Content Creator",
+            "Instructor de yoga certificat. Organizez sesiuni pe terasa biroului în pauzele de prânz.",
+            List.of("Yoga", "Swimming", "Running")));
 
-        // Satu Mare
-        employees.add(new Employee(34L, "Călin Sabău",       "Satu Mare",             List.of("Football", "Ski")));
-        employees.add(new Employee(35L, "Adriana Katona",    "Satu Mare",             List.of("Ping Pong", "Badminton")));
-        employees.add(new Employee(36L, "Liviu Berinde",     "Satu Mare",             List.of("Running", "Tennis")));
+        employees.add(new Employee(111L, "Alexandru Dima",  22, "M", "București",
+            "Junior Developer",
+            "Proaspăt angajat, full of energy. Baschet marți și joi după program.",
+            List.of("Basketball", "Football", "CrossFit")));
 
-        // Brăila
-        employees.add(new Employee(37L, "Marian Tudose",     "Brăila",                List.of("Football", "Running")));
-        employees.add(new Employee(38L, "Alina Gheorghiu",   "Brăila",                List.of("Tennis", "Yoga")));
-        employees.add(new Employee(39L, "Bogdan Leonte",     "Brăila",                List.of("Padel", "Cycling")));
+        employees.add(new Employee(112L, "Teodora Iancu",   34, "F", "București",
+            "Finance Manager",
+            "Înot de performanță în trecut, acum pentru relaxare. Alergări în Parcul Herăstrău.",
+            List.of("Swimming", "Running", "Yoga")));
 
-        // Galați
-        employees.add(new Employee(40L, "Costel Ifrim",      "Galați",                List.of("Football", "Padel")));
-        employees.add(new Employee(41L, "Roxana Frîncu",     "Galați",                List.of("Running", "Badminton")));
-        employees.add(new Employee(42L, "Eugen Stoica",      "Galați",                List.of("Tennis", "Cycling")));
+        employees.add(new Employee(113L, "Gabriel Vlad",    29, "M", "București",
+            "DevOps Engineer",
+            "CrossFit de 3 ori pe săptămână. Caut oameni motivați pentru antrenamente solide.",
+            List.of("CrossFit", "Gym", "Football")));
 
-        // Craiova
-        employees.add(new Employee(43L, "Sorin Barbu",       "Craiova",               List.of("Football", "Tennis")));
-        employees.add(new Employee(44L, "Maria Cojocaru",    "Craiova",               List.of("Yoga", "Running")));
-        employees.add(new Employee(45L, "Aurelian Mitu",     "Craiova",               List.of("Padel", "Badminton")));
+        employees.add(new Employee(114L, "Ioana Luca",      30, "F", "București",
+            "Project Manager",
+            "Pasionată de munte și natură. Organizez weekenduri la Sinaia și trasee pe Bucegi.",
+            List.of("Ski", "Hiking", "Cycling")));
 
-        // Drobeta Turnu Severin
-        employees.add(new Employee(46L, "Florinel Gîrleanu","Drobeta Turnu Severin",  List.of("Football", "Cycling")));
-        employees.add(new Employee(47L, "Daniela Radu",     "Drobeta Turnu Severin",  List.of("Running", "Yoga")));
-        employees.add(new Employee(48L, "Nicu Popescu",     "Drobeta Turnu Severin",  List.of("Tennis", "Padel")));
+        employees.add(new Employee(115L, "Mihai Mureșan",   33, "M", "București",
+            "Product Designer",
+            "Am jucat tenis în liga universitară, acum mai relaxat. Padelul e noua mea obsesie.",
+            List.of("Tennis", "Padel", "Basketball")));
+
+        // ── Additional employees (other cities) ─────────────────────────────────
+        employees.add(new Employee(6L,  "Alex Mihalcea",   "Cluj",       List.of("Padel", "Football")));
+        employees.add(new Employee(7L,  "Diana Aldea",     "Cluj",       List.of("Yoga", "Running")));
+        employees.add(new Employee(8L,  "Mihai Covrig",    "Cluj",       List.of("Tennis", "Cycling")));
+        employees.add(new Employee(9L,  "Raluca Bota",     "Cluj",       List.of("Badminton", "Ping Pong")));
+        employees.add(new Employee(10L, "Vlad Dumitrescu", "Iași",       List.of("Tennis", "Cycling")));
+        employees.add(new Employee(11L, "Andreea Chirica", "Iași",       List.of("Yoga", "Badminton")));
+        employees.add(new Employee(12L, "Cosmin Holban",   "Iași",       List.of("Football", "Running")));
+        employees.add(new Employee(13L, "Lucian Popa",     "Timișoara",  List.of("Football", "Running")));
+        employees.add(new Employee(14L, "Alina Bălan",     "Timișoara",  List.of("Padel", "Yoga")));
+        employees.add(new Employee(15L, "Cristian Negru",  "Timișoara",  List.of("Tennis", "Cycling")));
+        employees.add(new Employee(16L, "Radu Moldovan",   "Brașov",     List.of("Ski", "Running")));
+        employees.add(new Employee(17L, "Cristina Lungu",  "Brașov",     List.of("Yoga", "Cycling")));
+        employees.add(new Employee(18L, "Florin Gherman",  "Brașov",     List.of("Ski", "Football")));
+        employees.add(new Employee(19L, "Florin Marin",    "Constanța",  List.of("Padel", "Football")));
+        employees.add(new Employee(20L, "Simona Nedelcu",  "Constanța",  List.of("Running", "Tennis")));
+        employees.add(new Employee(21L, "Adrian Cojocaru", "Constanța",  List.of("Badminton", "Ping Pong")));
+        employees.add(new Employee(22L, "Gabriel Bota",    "Oradea",     List.of("Football", "Padel")));
+        employees.add(new Employee(23L, "Laura Crișan",    "Oradea",     List.of("Ping Pong", "Yoga")));
+        employees.add(new Employee(24L, "Tiberiu Sas",     "Oradea",     List.of("Tennis", "Running")));
+        employees.add(new Employee(25L, "Dănuț Bratu",     "Sibiu",      List.of("Ski", "Football")));
+        employees.add(new Employee(26L, "Monica Cârstea",  "Sibiu",      List.of("Yoga", "Tennis")));
+        employees.add(new Employee(27L, "Ionel Draghici",  "Sibiu",      List.of("Running", "Cycling")));
+        employees.add(new Employee(28L, "Petru Varga",     "Arad",       List.of("Football", "Tennis")));
+        employees.add(new Employee(29L, "Ana Suciu",       "Arad",       List.of("Badminton", "Running")));
+        employees.add(new Employee(30L, "Cornel Toth",     "Arad",       List.of("Padel", "Cycling")));
     }
 
-    public List<Employee>    getAllEmployees()  { return employees; }
-    public List<MeetingSlot> getMeetingSlots()  { return meetingSlots; }
+    public List<Employee>    getAllEmployees() { return employees; }
+    public List<MeetingSlot> getMeetingSlots() { return meetingSlots; }
 
     public Optional<Employee> findById(Long id) {
         return employees.stream().filter(e -> e.getId().equals(id)).findFirst();
     }
 
-    /**
-     * Legacy helper: returns the clock-time string of the next free slot after the current hour.
-     */
     public String findNextBreakSlot() {
         int currentHour = LocalTime.now().getHour();
         java.util.Set<Integer> blocked = new java.util.HashSet<>();

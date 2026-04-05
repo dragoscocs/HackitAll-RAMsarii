@@ -58,9 +58,14 @@ public class MatchmakingService {
         // ── Build employee list for the prompt ───────────────────────────────
         StringBuilder employeeList = new StringBuilder();
         for (Employee emp : pool) {
-            employeeList.append(String.format("- %s (%s): sports: %s\n",
-                    emp.getName(), emp.getCity(),
-                    String.join(", ", emp.getPreferredSports())));
+            String ageGender = (emp.getAge() > 0 && emp.getGender() != null)
+                    ? emp.getAge() + "yo " + emp.getGender() + ", "
+                    : "";
+            String role = (emp.getRole() != null) ? emp.getRole() + ", " : "";
+            employeeList.append(String.format("- %s (%s%s%s): sports: %s%s\n",
+                    emp.getName(), ageGender, role, emp.getCity(),
+                    String.join(", ", emp.getPreferredSports()),
+                    emp.getBio() != null ? " | bio: " + emp.getBio() : ""));
         }
 
         String cityContext = sameCity.size() >= 2
@@ -72,12 +77,13 @@ public class MatchmakingService {
                 "Employee %s from %s wants to play %s.\n\n" +
                 "%s\n\n" +
                 "Available colleagues:\n%s\n" +
-                "Use sport compatibility reasoning (e.g., Ping Pong players have great reflexes for Padel, " +
-                "Yoga practitioners have body awareness useful for most sports). " +
-                "Prefer colleagues from the same city.\n\n" +
+                "Rank by compatibility considering: shared sports, sport group similarity (e.g., Ping Pong ↔ Padel reflexes, " +
+                "Yoga ↔ Swimming body awareness), age proximity, and personality fit from bios. " +
+                "Write a personalized 1-sentence reason in Romanian that feels natural and human — not robotic. " +
+                "Reference specific details from their profile (age, sport level, bio) when relevant.\n\n" +
                 "Return ONLY valid JSON, no markdown, no extra text:\n" +
-                "{\"matches\": [{\"name\": \"...\", \"city\": \"...\", \"score\": 0.95, \"message\": \"...personalized 1-sentence explanation in Romanian...\"}]}\n\n" +
-                "Include 2-4 best matches, ranked by compatibility score (0.0-1.0).",
+                "{\"matches\": [{\"name\": \"...\", \"city\": \"...\", \"score\": 0.95, \"message\": \"...natural Romanian sentence...\"}]}\n\n" +
+                "Include 3-5 best matches, ranked by compatibility score (0.0-1.0).",
                 requesterName, requesterCity, activity,
                 cityContext, employeeList.toString()
         );
