@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,6 +18,11 @@ public class MatchmakingService {
     private final AiService aiService;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Cache matchmaking results for 5 minutes per (userId, activity)
+    private record CacheEntry(List<MatchResponse> results, Instant expiresAt) {}
+    private final Map<String, CacheEntry> matchCache = new ConcurrentHashMap<>();
+    private static final long CACHE_TTL_SECONDS = 300;
 
     // Sport categories for partial-match scoring
     private static final Map<String, String> SPORT_CATEGORY;
@@ -39,6 +46,13 @@ public class MatchmakingService {
     }
 
     public List<MatchResponse> findMatches(Long userId, String activity) {
+        // ── 0. Cache check ───────────────────────────────────────────────────
+        String cacheKey = userId + ":" + activity.toLowerCase();
+        CacheEntry cached = matchCache.get(cacheKey);
+        if (cached != null && Instant.now().isBefore(cached.expiresAt())) {
+            return cached.results();
+        }
+
         // ── 1. Resolve requester ─────────────────────────────────────────────
         User requester = userRepository.findById(userId).orElse(null);
         String requesterName = requester != null ? requester.getName() : "Coleg";
@@ -71,7 +85,7 @@ public class MatchmakingService {
         Map<String, String> messages = generateMessages(requesterName, requesterSports, activity, scored);
 
         // ── 5. Build response ────────────────────────────────────────────────
-        return scored.stream().map(sc -> {
+        List<MatchResponse> results = scored.stream().map(sc -> {
             User u = sc.user();
             MatchResponse mr = new MatchResponse(u.getName(), sc.score(), "");
             mr.setCity(u.getCity());
@@ -83,6 +97,10 @@ public class MatchmakingService {
                             "Colegi compatibili pentru " + activity + "!"));
             return mr;
         }).collect(Collectors.toList());
+
+        // ── 6. Store in cache ────────────────────────────────────────────────
+        matchCache.put(cacheKey, new CacheEntry(results, Instant.now().plusSeconds(CACHE_TTL_SECONDS)));
+        return results;
     }
 
     // ── Compatibility algorithm ───────────────────────────────────────────────
