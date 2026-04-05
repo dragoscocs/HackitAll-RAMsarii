@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import { generateCalendarForUser } from '../data/calendarData'
 
 export const MEETING_TYPES_MAP = {
-  standup: { label: 'Standup', color: '#34d399', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-300' },
+  standup: { label: 'Check-in', color: '#34d399', bg: 'bg-emerald-500/15', border: 'border-emerald-500/30', text: 'text-emerald-300' },
   planning: { label: 'Planning', color: '#818cf8', bg: 'bg-indigo-500/15', border: 'border-indigo-500/30', text: 'text-indigo-300' },
   'one-on-one': { label: '1:1', color: '#a78bfa', bg: 'bg-violet-500/15', border: 'border-violet-500/30', text: 'text-violet-300' },
   team: { label: 'Team Sync', color: '#38bdf8', bg: 'bg-sky-500/15', border: 'border-sky-500/30', text: 'text-sky-300' },
@@ -61,8 +61,7 @@ function getMoodFactors(todayEvts, breaksToday) {
 
   return [
     { label: 'Ședințe azi', value: `${(totalMin / 60).toFixed(1)}h`, delta: -Math.min(20, Math.floor(totalMin / 30) * 2), icon: '📅' },
-    { label: 'Back-to-back', value: `${consecutive} pauze`, delta: -(consecutive * 4), icon: '⚡' },
-    { label: 'Ședințe grele', value: `${heavy} sesiuni`, delta: -(heavy * 4), icon: '🏋️' },
+    { label: 'Back-to-back', value: `${consecutive} ședințe fără pauze`, delta: -(consecutive * 4), icon: '⚡' },
     { label: 'Ședințe târzii', value: `${late} după 17:00`, delta: -(late * 4), icon: '🌙' },
     { label: 'Pauze luate', value: `${breaksToday} pauze`, delta: breaksToday * 6, icon: '🌿' },
   ]
@@ -338,6 +337,19 @@ export function CalendarProvider({ children }) {
   const [takenBreaks, setTakenBreaks] = useState([]) // Array<Date>
   // snoozedUntil — break notification snoozed until this time
   const [snoozedUntil, setSnoozedUntil] = useState(null) // Date | null
+
+  // Reset break state when the effective "today" changes (real clock or demo)
+  const [trackedDateStr, setTrackedDateStr] = useState(() => new Date().toDateString())
+  useEffect(() => {
+    const effective = demoNow ?? clockNow
+    const dateStr = effective.toDateString()
+    if (dateStr !== trackedDateStr) {
+      setTrackedDateStr(dateStr)
+      setBreaksToday(0)
+      setTakenBreaks([])
+      setSnoozedUntil(null)
+    }
+  }, [demoNow, clockNow]) // eslint-disable-line
 
   const addTakenBreak = (breakTime = null) => {
     const t = breakTime ?? demoNow ?? new Date()

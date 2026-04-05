@@ -5,6 +5,42 @@ import { useCalendar } from '../context/CalendarContext'
 import { useAuth } from '../context/AuthContext'
 
 const BREAK_DURATION = 3 * 60
+
+/* ── City → coords for OpenMeteo weather API ─────────────────────── */
+const CITY_COORDS = {
+  'Bucharest':  { lat: 44.4268, lon: 26.1025 },
+  'București':  { lat: 44.4268, lon: 26.1025 },
+  'Cluj':       { lat: 46.7712, lon: 23.6236 },
+  'Cluj-Napoca':{ lat: 46.7712, lon: 23.6236 },
+  'Iași':       { lat: 47.1585, lon: 27.6014 },
+  'Timișoara':  { lat: 45.7489, lon: 21.2087 },
+  'Brașov':     { lat: 45.6427, lon: 25.5887 },
+  'Constanța':  { lat: 44.1598, lon: 28.6348 },
+}
+
+function weatherCodeToRo(code) {
+  if (code === 0)              return 'cer senin'
+  if (code <= 3)               return 'parțial noros'
+  if (code <= 48)              return 'ceață'
+  if (code <= 67)              return 'ploaie'
+  if (code <= 86)              return 'ninsoare'
+  return 'furtună'
+}
+
+async function fetchWeatherDescription(city) {
+  const coords = CITY_COORDS[city]
+  if (!coords) return null
+  try {
+    const r = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,weather_code&timezone=auto`
+    )
+    if (!r.ok) return null
+    const d = await r.json()
+    const temp = Math.round(d.current?.temperature_2m ?? 0)
+    const desc = weatherCodeToRo(d.current?.weather_code ?? 0)
+    return `${desc}, ${temp}°C`
+  } catch { return null }
+}
 const SVG_SIZE = 260
 const RADIUS = 110
 const CIRC = 2 * Math.PI * RADIUS
@@ -157,7 +193,7 @@ export default function PausePage() {
   const navigate   = useNavigate()
   const location   = useLocation()
   const canvasRef  = useShaderBackground()
-  const { recordBreak, addTakenBreak, setMoodFromSlider } = useCalendar()
+  const { recordBreak, addTakenBreak, setMoodFromSlider, effectiveMoodScore } = useCalendar()
   const { recordBreakInContext, user } = useAuth()
   const timerRef   = useRef(null)
   const recordedRef = useRef(false)
@@ -166,20 +202,31 @@ export default function PausePage() {
     location.state?.suggestionText ?? null
   )
 
-  // Fetch AI-personalized break suggestion on mount
+  // Fetch AI-personalized break suggestion on mount (weather-aware)
   useEffect(() => {
     const userId = user?.userId
     if (!userId) return
     const hour = new Date().getHours()
     const timeOfDay = hour < 12 ? 'dimineata' : hour < 17 ? 'dupa-amiaza' : 'seara'
-    fetch(`/api/ai/smart-break/${userId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentMood: 3, scheduleContext: 'Pauza inteligenta planificata', timeOfDay }),
+    const city = user?.city ?? 'București'
+    const workLoc = user?.workLocation === 'HOME' ? 'de acasă' : user?.workLocation === 'OFFICE' ? 'de la birou' : 'la birou'
+    const moodRaw = effectiveMoodScore ?? 50
+    // Map 0-100 mood score to 1-5 for backend API
+    const currentMood = Math.max(1, Math.min(5, Math.round(moodRaw / 20)))
+
+    fetchWeatherDescription(city).then(weather => {
+      const weatherCtx = weather ? `, vreme în ${city}: ${weather}` : ''
+      const scheduleContext = `Utilizatorul lucrează ${workLoc}${weatherCtx}, scor wellbeing: ${moodRaw}/100`
+
+      fetch(`/api/ai/smart-break/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentMood, scheduleContext, timeOfDay }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.description_ro) setAiSuggestion(data.description_ro) })
+        .catch(() => {})
     })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.description_ro) setAiSuggestion(data.description_ro) })
-      .catch(() => {})
   }, []) // eslint-disable-line
 
   const suggestionText = aiSuggestion ?? 'Depărtează-te de ecran. Respiră adânc și relaxează-te.'
