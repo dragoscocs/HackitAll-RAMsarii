@@ -115,8 +115,7 @@ export default function PausePage() {
   const navigate   = useNavigate()
   const location   = useLocation()
   const canvasRef  = useShaderBackground()
-  const { recordBreak }          = useCalendar()
-  const { setMoodFromSlider }    = useCalendar()
+  const { recordBreak, addTakenBreak, setMoodFromSlider } = useCalendar()
   const { recordBreakInContext, user } = useAuth()
   const timerRef   = useRef(null)
   const recordedRef = useRef(false)
@@ -125,6 +124,7 @@ export default function PausePage() {
 
   const [secondsLeft, setSecondsLeft] = useState(BREAK_DURATION)
   const [phase, setPhase]             = useState('countdown')
+  const [submittedMood, setSubmittedMood] = useState(0)
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -141,11 +141,12 @@ export default function PausePage() {
   const finishWithMood = (sliderValue) => {
     if (!recordedRef.current) {
       recordedRef.current = true
-      recordBreak()
+      addTakenBreak()      // records time + increments count + clears snooze
       recordBreakInContext()
     }
     const firstName = user?.name?.split(' ')[0] ?? 'Coleg'
     setMoodFromSlider(sliderValue, firstName)
+    setSubmittedMood(sliderValue)
     setPhase('done')
   }
 
@@ -211,12 +212,44 @@ export default function PausePage() {
         )}
 
         {phase === 'done' && (
-          <div className="flex flex-col items-center gap-7 animate-fade-in text-center">
-            <span className="text-8xl">🎉</span>
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Excelent!</h1>
-              <p className="text-slate-400 text-sm">Streak-ul și scorul tău de wellbeing au fost actualizate. Continuă tot așa!</p>
-            </div>
+          <div className="flex flex-col items-center gap-7 animate-fade-in text-center max-w-sm px-4">
+            {submittedMood > 0 ? (
+              <>
+                <span className="text-8xl">🎉</span>
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-2">Excelent!</h1>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Pauza a funcționat — te-ai simțit mai bine! Streak-ul tău a crescut și scorul de wellbeing a fost actualizat.
+                  </p>
+                </div>
+              </>
+            ) : submittedMood === 0 ? (
+              <>
+                <span className="text-8xl">😊</span>
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-2">Mulțumim!</h1>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Ne bucurăm că ai luat pauza. Chiar și momentele neutre contează — continuă să fii consecvent!
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="text-8xl">💙</span>
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-2">Îți mulțumim pentru sinceritate</h1>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    AI-ul a notat starea ta și va ajusta pauzele și recomandările viitoare pentru a te sprijini mai bine în restul zilei.
+                  </p>
+                </div>
+                <div className="w-full rounded-2xl bg-indigo-500/10 border border-indigo-500/20 px-5 py-4 text-left">
+                  <p className="text-xs font-semibold text-indigo-400 mb-1">💡 Recomandare AI</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    O plimbare scurtă de 5 minute sau câteva exerciții de respirație pot îmbunătăți semnificativ concentrarea și starea de spirit.
+                  </p>
+                </div>
+              </>
+            )}
             <button onClick={() => navigate('/dashboard')}
               className="px-8 py-4 bg-gradient-to-r from-emerald-500 to-indigo-500 text-white rounded-2xl font-semibold transition-all hover:scale-105 shadow-lg shadow-indigo-500/30">
               Înapoi la dashboard →
